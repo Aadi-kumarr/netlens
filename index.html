@@ -1043,347 +1043,477 @@ function downloadExcel(){
   setTimeout(()=>{
     try{
       const wb=XLSX.utils.book_new();
+      wb.Props={Title:"NetLens Analytics",Author:"NetLens"};
       const d=G.all,total=d.length;
 
-      /* ── colours ── */
-      const C={
-        hDark:'0A2540',hMid:'1E3A5F',
-        brick:'8B3A2A',brickLt:'FAF0EE',brickPale:'FDF5F3',
-        gold:'C4860A',goldLt:'FBF0D8',
-        green:'2A5C3F',greenLt:'E2F0E8',
-        navy:'1A4A6E',navyLt:'E8EEF6',
-        purple:'6B3D7A',purpleLt:'F3EEFF',
-        teal:'2A5C4E',tealLt:'E0F4EE',
-        slate:'5A4A3A',slateLt:'F5F0EB',
-        pink:'8B2A5C',pinkLt:'FDECEA',
-        ink:'1A1008',ink3:'7A6450',ink4:'B09880',
-        surf:'FFFAF4',surf2:'F9F2E8',bg:'F5EDE0',bg3:'E5D8C5',
-        bdr:'D4C4B0',wht:'FFFFFF',
+      /* ───────────────────────────────────────────
+         COLOUR SYSTEM
+      ─────────────────────────────────────────── */
+      const CLR={
+        // backgrounds
+        inkDark:'1A140E', ink:'2C1F14',
+        headerBg:'2D1B0E', subBg:'3D2A1A',
+        cream:'FAF7F2', warm:'F2EDE4', warm2:'E8E0D4',
+        // accents
+        rust:'C4522A', rustLt:'FAEEE8', rustPale:'FDF6F3',
+        amber:'C4860A', amberLt:'FBF0D8',
+        forest:'2D5A3D', forestLt:'E4F0E8',
+        navy:'1C3A5E', navyLt:'E6EEF7',
+        plum:'5C2D6E', plumLt:'F2EAF7',
+        teal:'2A5A4E', tealLt:'E0F4EE',
+        slate:'4A3A2A', slateLt:'F5F0EB',
+        // text
+        white:'FFFFFF', offwhite:'FFF8F0',
+        muted:'B0A090', light:'D9CFBF',
+        border:'D9D0C4',
+        // category map
+        cats:{
+          'Founder / C-Suite':     {bg:'FAEEE8',fg:'C4522A',accent:'C4522A'},
+          'SWE / Engineer':        {bg:'E6EEF7',fg:'1C3A5E',accent:'1C3A5E'},
+          'Senior / Staff SWE':    {bg:'E4F0E8',fg:'2D5A3D',accent:'2D5A3D'},
+          'Engineering Manager':   {bg:'E8F4EC',fg:'1F4A2E',accent:'1F4A2E'},
+          'Recruiter / HR':        {bg:'F2EAF7',fg:'5C2D6E',accent:'5C2D6E'},
+          'Product Manager':       {bg:'FFF0EC',fg:'8B3A1A',accent:'8B3A1A'},
+          'Data Science / ML':     {bg:'E0F4EE',fg:'2A5A4E',accent:'2A5A4E'},
+          'Director / VP':         {bg:'F5F0EB',fg:'4A3A2A',accent:'4A3A2A'},
+          'Investor / VC':         {bg:'FBF0D8',fg:'C4860A',accent:'C4860A'},
+          'Student / Intern':      {bg:'F5F5F0',fg:'6A6050',accent:'7A7060'},
+          'Analyst / Consultant':  {bg:'F5F2EE',fg:'5A5040',accent:'6A6050'},
+          'FAANG / Big Tech':      {bg:'E5EDFA',fg:'1A3A6E',accent:'1A3A6E'},
+          'YC Network':            {bg:'FDECEA',fg:'A84320',accent:'A84320'},
+          'AI Companies':          {bg:'E0F4EE',fg:'2D6A4A',accent:'2D6A4A'},
+          'Other':                 {bg:'F5F5F0',fg:'8A8070',accent:'8A8070'},
+        }
       };
 
+      /* ───────────────────────────────────────────
+         STYLE FACTORY
+      ─────────────────────────────────────────── */
+      const bd=(c=CLR.border,s='thin')=>({top:{style:s,color:{rgb:c}},bottom:{style:s,color:{rgb:c}},left:{style:s,color:{rgb:c}},right:{style:s,color:{rgb:c}}});
+      const bdB=(c=CLR.border,s='medium')=>({bottom:{style:s,color:{rgb:c}}});
+
+      // Core cell builder — returns full SheetJS cell object with style
+      function C(val,opts={}){
+        const{
+          bg=CLR.cream,fg=CLR.ink,bold=false,sz=10,
+          al='left',valign='center',it=false,wrap=false,
+          font='Calibri',brd=true,brdColor=CLR.border,brdStyle='thin',
+          numFmt,underline=false
+        }=opts;
+        const cell={
+          v:val??'',
+          t:typeof val==='number'?'n':'s',
+          s:{
+            font:{name:font,bold,sz,color:{rgb:fg},italic:it,underline},
+            fill:{patternType:'solid',fgColor:{rgb:bg}},
+            alignment:{horizontal:al,vertical:valign,wrapText:wrap},
+            border:brd?bd(brdColor,brdStyle):{},
+          }
+        };
+        if(numFmt)cell.s.numFmt=numFmt;
+        return cell;
+      }
+
+      // Shortcuts
+      const BLANK=(bg=CLR.cream)=>C('',{bg,brd:false});
+      const HDRROW=(v,bg=CLR.headerBg)=>C(v,{bg,fg:CLR.white,bold:true,sz:11,al:'center',wrap:true,brdColor:bg});
+      const SECHDR=(v,bg=CLR.headerBg)=>C(v,{bg,fg:CLR.white,bold:true,sz:12,al:'left',brdColor:bg});
+      const NUM=(n,fg=CLR.ink,bg=CLR.cream,sz=10)=>({v:n,t:'n',s:{font:{name:'Calibri',bold:true,sz,color:{rgb:fg}},fill:{patternType:'solid',fgColor:{rgb:bg}},alignment:{horizontal:'center',vertical:'center'},border:bd()}});
+      const BAR=(n,max,fg,bg=CLR.cream)=>{
+        const f=max>0?Math.round((n/max)*24):0;
+        const bar='▓'.repeat(f)+'░'.repeat(24-f);
+        return C(`${bar}  ${n.toLocaleString()}`,{bg,fg,sz:8,font:'Courier New',brdColor:CLR.border});
+      };
+
+      /* ───────────────────────────────────────────
+         DATA PREP
+      ─────────────────────────────────────────── */
       const CAT_META=[
-        {cat:'Founder / C-Suite',   sn:'Founder-C-Suite',    fg:C.brick,  bg:C.brickLt,  sub:'Highest leverage · cold DM priority'},
-        {cat:'SWE / Engineer',      sn:'SWE-Engineer',       fg:C.navy,   bg:C.navyLt,   sub:'Core peer engineer network'},
-        {cat:'Senior / Staff SWE',  sn:'Senior-Staff-SWE',   fg:'2A5C3F', bg:C.greenLt,  sub:'Senior engineers at top companies'},
-        {cat:'Engineering Manager', sn:'Eng-Manager',        fg:'3A5A2A', bg:'EAF3DE',   sub:'Direct hiring decision makers'},
-        {cat:'Recruiter / HR',      sn:'Recruiter-HR',       fg:C.purple, bg:C.purpleLt, sub:'Direct hiring pipeline'},
-        {cat:'Product Manager',     sn:'Product-Manager',    fg:'7A3B2A', bg:'FFF0EC',   sub:'PMs at target companies'},
-        {cat:'Data Science / ML',   sn:'Data-Science-ML',    fg:C.teal,   bg:C.tealLt,   sub:'ML / AI researchers'},
-        {cat:'Director / VP',       sn:'Director-VP',        fg:C.slate,  bg:C.slateLt,  sub:'Senior leaders'},
-        {cat:'Investor / VC',       sn:'Investor-VC',        fg:C.gold,   bg:C.goldLt,   sub:'Venture & angel investors'},
-        {cat:'Student / Intern',    sn:'Student-Intern',     fg:'7A7060', bg:'F5F5F0',   sub:'Peer student network'},
-        {cat:'Analyst / Consultant',sn:'Analyst-Consult',    fg:'6A6050', bg:'F5F2EE',   sub:'Analyst & consulting roles'},
-        {cat:'FAANG / Big Tech',    sn:'FAANG-Big-Tech',     fg:C.navy,   bg:C.navyLt,   sub:'Referral goldmine'},
-        {cat:'YC Network',          sn:'YC-Network',         fg:'A84832', bg:C.brickLt,  sub:'20 direct YC connections'},
-        {cat:'AI Companies',        sn:'AI-Companies',       fg:C.green,  bg:C.greenLt,  sub:'AI startup contacts'},
-        {cat:'Other',               sn:'Other',              fg:'8A8070', bg:'F5F5F0',   sub:'Remaining connections'},
+        {cat:'Founder / C-Suite',   sn:'Founder-C-Suite'},
+        {cat:'SWE / Engineer',      sn:'SWE-Engineer'},
+        {cat:'Senior / Staff SWE',  sn:'Senior-Staff-SWE'},
+        {cat:'Engineering Manager', sn:'Eng-Manager'},
+        {cat:'Recruiter / HR',      sn:'Recruiter-HR'},
+        {cat:'Product Manager',     sn:'Product-Manager'},
+        {cat:'Data Science / ML',   sn:'Data-Science-ML'},
+        {cat:'Director / VP',       sn:'Director-VP'},
+        {cat:'Investor / VC',       sn:'Investor-VC'},
+        {cat:'Student / Intern',    sn:'Student-Intern'},
+        {cat:'Analyst / Consultant',sn:'Analyst-Consult'},
+        {cat:'FAANG / Big Tech',    sn:'FAANG-Big-Tech'},
+        {cat:'YC Network',          sn:'YC-Network'},
+        {cat:'AI Companies',        sn:'AI-Companies'},
+        {cat:'Other',               sn:'Other'},
       ];
 
-      /* ── border / style helpers ── */
-      const ba=(c=C.bdr)=>({top:{style:'thin',color:{rgb:c}},bottom:{style:'thin',color:{rgb:c}},left:{style:'thin',color:{rgb:c}},right:{style:'thin',color:{rgb:c}}});
-      const bMed=(c=C.bdr)=>({top:{style:'medium',color:{rgb:c}},bottom:{style:'medium',color:{rgb:c}},left:{style:'medium',color:{rgb:c}},right:{style:'medium',color:{rgb:c}}});
-      const S=(v,o={})=>{
-        const{bg=C.surf,fg=C.ink,bold=false,sz=10,al='left',it=false,wrap=false,brd=true}=o;
-        const s={font:{bold,sz,color:{rgb:fg},name:'Calibri',italic:it},fill:{fgColor:{rgb:bg}},alignment:{horizontal:al,vertical:'center',wrapText:wrap}};
-        if(brd)s.border=ba();
-        return{v:v??'',t:typeof v==='number'?'n':'s',s};
-      };
-      const HDR=(v,bg=C.hMid)=>S(v,{bg,fg:C.wht,bold:true,sz:10,al:'center',wrap:true});
-      const BAR=(n,max,clr)=>{
-        const f=max>0?Math.round((n/max)*20):0;
-        return{v:'█'.repeat(f)+'░'.repeat(20-f)+`  ${n.toLocaleString()}`,t:'s',
-          s:{font:{sz:9,color:{rgb:clr},name:'Courier New',bold:f>=14},fill:{fgColor:{rgb:C.surf}},alignment:{horizontal:'left',vertical:'center'},border:ba()}};
-      };
-      const LINK=(cell,sheetName)=>{
-        cell.hyperlink=new (function(){this.location=`'${sheetName}'!A1`;this.ref=''})();
-        // openpyxl-style won't work in SheetJS — use the correct SheetJS hyperlink format
-      };
-
-      /* ── data ── */
-      const monthly={};
-      d.forEach(r=>{if(!r.con)return;const dt=new Date(r.con);if(isNaN(dt))return;
-        const k=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-        monthly[k]=(monthly[k]||0)+1});
-      const mKeys=Object.keys(monthly).sort().slice(-12);
-      const maxM=Math.max(...mKeys.map(k=>monthly[k]),1);
-      const coCnt={};d.forEach(r=>{if(r.co)coCnt[r.co]=(coCnt[r.co]||0)+1});
-      const topCos=Object.entries(coCnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
-      const maxCo=topCos[0]?.[1]||1;
       const catCounts={};
       CAT_META.forEach(m=>catCounts[m.cat]=(G.cats[m.cat]||[]).length);
-      const maxCat=Math.max(...Object.values(catCounts),1);
+
       const faang=catCounts['FAANG / Big Tech']||0;
       const yc=catCounts['YC Network']||0;
       const founders=catCounts['Founder / C-Suite']||0;
       const engMgr=catCounts['Engineering Manager']||0;
       const recruiters=catCounts['Recruiter / HR']||0;
       const ai=catCounts['AI Companies']||0;
+      const maxCat=Math.max(...Object.values(catCounts),1);
 
-      /* ══════════════════════════════
-         DASHBOARD SHEET
-      ══════════════════════════════ */
-      const DR=[];
-      const NCOLS=8; // A–H
+      const monthly={};
+      d.forEach(r=>{if(!r.con)return;const dt=new Date(r.con);if(isNaN(dt))return;
+        const k=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+        monthly[k]=(monthly[k]||0)+1});
+      const mKeys=Object.keys(monthly).sort().slice(-12);
+      const maxM=Math.max(...mKeys.map(k=>monthly[k]),1);
 
-      const emp=(bg=C.bg,n=1)=>Array(n).fill(S('',{bg,brd:false}));
+      const coCnt={};d.forEach(r=>{if(r.co)coCnt[r.co]=(coCnt[r.co]||0)+1});
+      const topCos=Object.entries(coCnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+      const maxCo=topCos[0]?.[1]||1;
 
-      // ── Title banner ──
-      DR.push([S('NETLENS  —  LINKEDIN NETWORK ANALYTICS DASHBOARD',{bg:C.hDark,fg:C.wht,bold:true,sz:16,al:'center',brd:false}),...emp(C.hDark,NCOLS-1)]);
-      DR.push([S(`${total.toLocaleString()} connections  ·  ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}  ·  100% private — data never left your browser`,{bg:'0F2D50',fg:'AAAAAA',sz:9,al:'center',it:true,brd:false}),...emp('0F2D50',NCOLS-1)]);
-      DR.push(emp(C.bg,NCOLS));
-
-      // ── Section: CLICK TO EXPLORE ──
-      DR.push([S('  CLICK ANY CATEGORY TILE BELOW TO JUMP TO THAT SHEET  →',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
-      DR.push(emp(C.bg,NCOLS));
-
-      // ── Tiles row 1: 4 tiles ──
-      // Each tile = 2 cols wide, spans 3 rows: [label] [count] [sub]
-      // We lay them as merged cells in 3 consecutive rows per tile-group
-      const TILE_ROWS=4; // rows per tile block (label + count + sub + gap)
-      const TILE_COLS=[['A','B'],['C','D'],['E','F'],['G','H']]; // 4 tiles per row, 2 cols each
-
-      // Build tiles in groups of 4
-      for(let group=0;group<Math.ceil(CAT_META.length/4);group++){
-        const slice=CAT_META.slice(group*4,(group+1)*4);
-        // Row A: big count number
-        const countRow=slice.map(m=>{
-          const n=catCounts[m.cat]||0;
-          return S(n,{bg:m.bg,fg:m.fg,bold:true,sz:28,al:'center'});
-        });
-        // Pad to 8 cols (4 tiles × 2 cols, but we merge pairs later)
-        DR.push(countRow);
-        // Row B: category name
-        DR.push(slice.map(m=>S(m.cat,{bg:m.bg,fg:m.fg,bold:true,sz:11,al:'center'})));
-        // Row C: sub label
-        DR.push(slice.map(m=>S(m.sub,{bg:m.bg,fg:m.ink3||C.ink3,sz:9,al:'center',it:true})));
-        // Gap row
-        DR.push(emp(C.bg,4));
+      /* ═══════════════════════════════════════════
+         SHEET BUILDER HELPER
+         Converts a 2D array of cell objects into a
+         SheetJS worksheet with styles applied.
+      ═══════════════════════════════════════════ */
+      function buildSheet(rows,colWidths,rowHeights){
+        // First create from plain values
+        const vals=rows.map(r=>r.map(c=>{
+          if(c===null||c===undefined)return'';
+          if(typeof c==='object'&&'v'in c)return c.v??'';
+          return c;
+        }));
+        const ws=XLSX.utils.aoa_to_sheet(vals);
+        // Apply styles cell by cell
+        rows.forEach((row,ri)=>row.forEach((cell,ci)=>{
+          if(cell&&typeof cell==='object'&&cell.s){
+            const addr=XLSX.utils.encode_cell({r:ri,c:ci});
+            if(!ws[addr])ws[addr]={v:cell.v??'',t:cell.t||'s'};
+            ws[addr].s=cell.s;
+            if(cell.t)ws[addr].t=cell.t;
+            if(cell.v!==undefined)ws[addr].v=cell.v;
+            if(cell.l)ws[addr].l=cell.l; // hyperlinks
+          }
+        }));
+        if(colWidths)ws['!cols']=colWidths.map(w=>({wch:w}));
+        if(rowHeights)ws['!rows']=rowHeights;
+        return ws;
       }
 
-      DR.push(emp(C.bg,NCOLS));
+      /* ═══════════════════════════════════════════
+         DASHBOARD SHEET
+      ═══════════════════════════════════════════ */
+      const DR=[];
+      const N=8; // 8 columns A–H
+      const E=(bg=CLR.cream,n=N)=>Array(n).fill(BLANK(bg));
 
-      // ── KPI Summary ──
-      DR.push([S('  NETWORK AT A GLANCE',{bg:C.hDark,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hDark,NCOLS-1)]);
-      DR.push([
-        S('Total',{bg:C.brickLt,fg:C.brick,bold:true,sz:9,al:'center'}),
-        S('Founders',{bg:C.brickLt,fg:C.brick,bold:true,sz:9,al:'center'}),
-        S('FAANG',{bg:C.navyLt,fg:C.navy,bold:true,sz:9,al:'center'}),
-        S('YC Founders',{bg:C.brickLt,fg:'A84832',bold:true,sz:9,al:'center'}),
-        S('AI Cos',{bg:C.greenLt,fg:C.green,bold:true,sz:9,al:'center'}),
-        S('NITW Alumni',{bg:C.pinkLt||'FDECEA',fg:C.pink||'8B2A5C',bold:true,sz:9,al:'center'}),
-        S('Recruiters',{bg:C.purpleLt,fg:C.purple,bold:true,sz:9,al:'center'}),
-        S('Eng Mgrs',{bg:C.tealLt,fg:C.teal,bold:true,sz:9,al:'center'}),
-      ]);
-      DR.push([
-        {v:total,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.brick},name:'Calibri'},fill:{fgColor:{rgb:C.brickPale}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-        {v:founders,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.brick},name:'Calibri'},fill:{fgColor:{rgb:C.brickLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-        {v:faang,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.navy},name:'Calibri'},fill:{fgColor:{rgb:C.navyLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-        {v:yc,t:'n',s:{font:{bold:true,sz:24,color:{rgb:'A84832'},name:'Calibri'},fill:{fgColor:{rgb:C.brickLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-        {v:ai,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.green},name:'Calibri'},fill:{fgColor:{rgb:C.greenLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-        {v:(G.cats['NITW Alumni']||[]).length,t:'n',s:{font:{bold:true,sz:24,color:{rgb:'8B2A5C'},name:'Calibri'},fill:{fgColor:{rgb:'FDECEA'}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-        {v:recruiters,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.purple},name:'Calibri'},fill:{fgColor:{rgb:C.purpleLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-        {v:engMgr,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.teal},name:'Calibri'},fill:{fgColor:{rgb:C.tealLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-      ]);
-      DR.push(emp(C.bg,NCOLS));
+      // ── Row 0: Main title ──
+      DR.push([C('NetLens  —  LinkedIn Network Analytics Dashboard',{bg:CLR.headerBg,fg:CLR.offwhite,bold:true,sz:16,al:'center',brd:false}),...Array(N-1).fill(BLANK(CLR.headerBg))]);
 
-      // ── Category bar chart ──
-      DR.push([S('  CATEGORY DISTRIBUTION',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
-      DR.push([HDR('Category'),HDR('Count'),HDR('% Share'),HDR('Bar Chart (20 blocks = 100% of largest)',C.hMid),...emp(C.hMid,4)]);
+      // ── Row 1: subtitle ──
+      DR.push([C(`${total.toLocaleString()} connections  ·  ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}  ·  All data processed locally — never left your browser`,{bg:CLR.subBg,fg:'C8B8A8',sz:9,al:'center',it:true,brd:false}),...Array(N-1).fill(BLANK(CLR.subBg))]);
+
+      // ── Row 2: spacer ──
+      DR.push(E(CLR.warm2));
+
+      // ── Row 3: instruction banner ──
+      DR.push([C('  🖱  CLICK ANY COLOURED TILE BELOW  →  JUMPS DIRECTLY TO THAT CATEGORY SHEET',{bg:'3D2A1A',fg:'E8D0B8',bold:true,sz:10,al:'left',brd:false}),...Array(N-1).fill(BLANK('3D2A1A'))]);
+
+      DR.push(E(CLR.warm2)); // spacer row 4
+
+      /* ── TILE ROWS: 4 tiles per row, 4 rows per tile group ──
+         Row A = big number (hyperlinked)
+         Row B = category name (hyperlinked)
+         Row C = subtitle text
+         Row D = thin colour bar + gap
+      */
+      const TILE_H=[50,22,18,8]; // row heights per tile row
+      const TILE_START_ROW=5;
+
+      for(let g=0;g<Math.ceil(CAT_META.length/4);g++){
+        const slice=CAT_META.slice(g*4,(g+1)*4);
+        // Pad to exactly 4
+        while(slice.length<4)slice.push(null);
+
+        // Count row
+        DR.push(slice.map(m=>{
+          if(!m)return BLANK(CLR.warm);
+          const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
+          const n=catCounts[m.cat]||0;
+          const cell=NUM(n,cc.fg,cc.bg,30);
+          // Add hyperlink
+          cell.l={Target:`#'${m.sn}'!A1`,Tooltip:`View ${m.cat} connections`};
+          return cell;
+        }));
+
+        // Name row
+        DR.push(slice.map(m=>{
+          if(!m)return BLANK(CLR.warm);
+          const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
+          const cell=C(m.cat,{bg:cc.bg,fg:cc.fg,bold:true,sz:11,al:'center',brdColor:cc.bg});
+          cell.l={Target:`#'${m.sn}'!A1`,Tooltip:`View all ${m.cat}`};
+          return cell;
+        }));
+
+        // Subtitle row
+        DR.push(slice.map(m=>{
+          if(!m)return BLANK(CLR.warm);
+          const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
+          const subs={'Founder / C-Suite':'Highest leverage · DM first','SWE / Engineer':'Core peer network',
+            'Senior / Staff SWE':'Top-tier engineers','Engineering Manager':'Hiring decision makers',
+            'Recruiter / HR':'Direct hiring pipeline','Product Manager':'PMs at target companies',
+            'Data Science / ML':'ML & AI researchers','Director / VP':'Senior leaders',
+            'Investor / VC':'Venture & angel investors','Student / Intern':'Peer student network',
+            'Analyst / Consultant':'Analyst & consulting','FAANG / Big Tech':'Referral goldmine ★',
+            'YC Network':'YC direct connections ★★','AI Companies':'AI startup contacts',
+            'Other':'Remaining connections'};
+          return C(subs[m.cat]||'',{bg:cc.bg,fg:cc.fg+'AA'||CLR.muted,sz:8,al:'center',it:true,brdColor:cc.bg});
+        }));
+
+        // Thin accent bar + gap row
+        DR.push(slice.map(m=>{
+          if(!m)return BLANK(CLR.warm);
+          const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
+          return BLANK(cc.bg);
+        }));
+      }
+
+      // Spacer
+      DR.push(E(CLR.warm2));
+
+      /* ── KPI SUMMARY ROW ── */
+      DR.push([C('  NETWORK AT A GLANCE',{bg:CLR.headerBg,fg:CLR.white,bold:true,sz:11,al:'left',brd:false}),...Array(N-1).fill(BLANK(CLR.headerBg))]);
+
+      const kpiLabels=[
+        {l:'Total',v:total,fg:CLR.rust,bg:CLR.rustLt},
+        {l:'Founders',v:founders,fg:CLR.rust,bg:CLR.rustPale},
+        {l:'FAANG',v:faang,fg:CLR.navy,bg:CLR.navyLt},
+        {l:'YC Founders',v:yc,fg:'A84320',bg:'FDECEA'},
+        {l:'AI Companies',v:ai,fg:CLR.forest,bg:CLR.forestLt},
+        {l:'Eng Managers',v:engMgr,fg:CLR.teal,bg:CLR.tealLt},
+        {l:'Recruiters',v:recruiters,fg:CLR.plum,bg:CLR.plumLt},
+        {l:'Other',v:(catCounts['Other']||0),fg:CLR.slate,bg:CLR.slateLt},
+      ];
+      DR.push(kpiLabels.map(k=>C(k.l,{bg:k.bg,fg:k.fg,bold:true,sz:9,al:'center',brdColor:k.fg+'33'})));
+      DR.push(kpiLabels.map(k=>NUM(k.v,k.fg,k.bg,26)));
+      DR.push(kpiLabels.map(k=>C(total>0?((k.v/total)*100).toFixed(1)+'%':'—',{bg:k.bg,fg:'888888',sz:8,al:'center',it:true,brdColor:k.fg+'33'})));
+
+      DR.push(E(CLR.warm2)); // spacer
+
+      /* ── CATEGORY DISTRIBUTION BAR CHART ── */
+      DR.push([SECHDR('  📊  CATEGORY DISTRIBUTION'),...Array(N-1).fill(BLANK(CLR.headerBg))]);
+      DR.push([HDRROW('Category'),HDRROW('Count'),HDRROW('%'),C('Bar Chart — each ▓ = 4.2% of the largest category',{bg:CLR.subBg,fg:'D0B898',bold:true,sz:10,al:'center',brdColor:CLR.subBg}),...Array(N-4).fill(BLANK(CLR.subBg))]);
+
       CAT_META.forEach(m=>{
-        const n=catCounts[m.cat]||0,pct=total>0?((n/total)*100).toFixed(1)+'%':'0%';
+        const n=catCounts[m.cat]||0;
+        const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
+        const pct=total>0?((n/total)*100).toFixed(1)+'%':'0%';
         DR.push([
-          S(m.cat,{bg:m.bg,fg:m.fg,bold:true,sz:10}),
-          {v:n,t:'n',s:{font:{bold:true,sz:11,color:{rgb:m.fg},name:'Calibri'},fill:{fgColor:{rgb:m.bg}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-          S(pct,{bg:m.bg,fg:C.ink3,sz:9,al:'center'}),
-          BAR(n,maxCat,m.fg),
-          ...emp(C.surf,4),
+          C(m.cat,{bg:cc.bg,fg:cc.fg,bold:true,sz:10,brdColor:cc.fg+'44'}),
+          NUM(n,cc.fg,cc.bg,11),
+          C(pct,{bg:cc.bg,fg:'888888',sz:9,al:'center',brdColor:cc.fg+'44'}),
+          BAR(n,maxCat,cc.fg,cc.bg),
+          ...Array(N-4).fill(C('',{bg:cc.bg,brdColor:cc.fg+'22'})),
         ]);
       });
-      DR.push(emp(C.bg,NCOLS));
 
-      // ── Monthly growth ──
-      DR.push([S('  MONTHLY GROWTH — LAST 12 MONTHS',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
-      DR.push([HDR('Month'),HDR('Added'),HDR('Bar'),HDR(''),HDR(''),HDR(''),HDR(''),HDR('')]);
+      DR.push(E(CLR.warm2));
+
+      /* ── MONTHLY GROWTH ── */
+      DR.push([SECHDR('  📈  MONTHLY GROWTH — LAST 12 MONTHS'),...Array(N-1).fill(BLANK(CLR.headerBg))]);
+      DR.push([HDRROW('Month'),HDRROW('Added'),HDRROW('Bar'),HDRROW(''),...Array(N-4).fill(HDRROW(''))]);
+
       mKeys.forEach(k=>{
-        const v=monthly[k],isPeak=v===maxM;
+        const v=monthly[k];
+        const isPeak=v===maxM;
         const lbl=new Date(k.split('-')[0],k.split('-')[1]-1).toLocaleDateString('en-GB',{month:'short',year:'numeric'});
-        const clr=isPeak?C.brick:v>maxM*0.6?C.gold:C.ink3;
+        const fg=isPeak?CLR.rust:v>maxM*0.6?CLR.amber:CLR.slate;
+        const bg=isPeak?CLR.rustLt:CLR.cream;
         DR.push([
-          S(lbl,{bg:isPeak?C.brickLt:C.surf,fg:C.ink,bold:isPeak,sz:10}),
-          {v,t:'n',s:{font:{bold:isPeak,sz:11,color:{rgb:clr},name:'Calibri'},fill:{fgColor:{rgb:isPeak?C.brickLt:C.surf}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-          BAR(v,maxM,clr),
-          ...emp(C.surf,5),
+          C(lbl,{bg,fg:CLR.ink,bold:isPeak,sz:10}),
+          NUM(v,fg,bg,11),
+          BAR(v,maxM,fg,bg),
+          C(isPeak?'◀ PEAK MONTH':v>maxM*0.6?'High':'',{bg,fg,sz:8,al:'center',bold:isPeak}),
+          ...Array(N-4).fill(C('',{bg,brd:false})),
         ]);
       });
-      DR.push(emp(C.bg,NCOLS));
 
-      // ── Top companies ──
-      DR.push([S('  TOP COMPANIES IN NETWORK',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
-      DR.push([HDR('Company'),HDR('Count'),HDR('Bar'),HDR(''),HDR(''),HDR(''),HDR(''),HDR('')]);
-      const coClrs=[C.brick,'A84832',C.gold,'C4960E',C.green,'3A7A52',C.navy,'2C5A8E',C.purple,'3A6E5A'];
+      DR.push(E(CLR.warm2));
+
+      /* ── TOP COMPANIES ── */
+      DR.push([SECHDR('  🏢  TOP 10 COMPANIES IN NETWORK'),...Array(N-1).fill(BLANK(CLR.headerBg))]);
+      DR.push([HDRROW('Company'),HDRROW('Count'),HDRROW('%'),HDRROW('Distribution'),...Array(N-4).fill(HDRROW(''))]);
+
+      const coFGs=[CLR.rust,'A84320',CLR.amber,'C4960E',CLR.forest,'3A7A52',CLR.navy,'2C5A8E',CLR.plum,'3A6E5A'];
       topCos.forEach(([nm,v],i)=>{
-        const clr=coClrs[i%coClrs.length],pct=total>0?((v/total)*100).toFixed(1)+'%':'';
+        const fg=coFGs[i%coFGs.length];
+        const pct=total>0?((v/total)*100).toFixed(1)+'%':'';
+        const rowBg=i%2===0?CLR.cream:CLR.warm;
         DR.push([
-          S(nm,{bg:C.surf,fg:C.ink,bold:i<3,sz:10}),
-          {v,t:'n',s:{font:{bold:true,sz:11,color:{rgb:clr},name:'Calibri'},fill:{fgColor:{rgb:C.surf}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-          BAR(v,maxCo,clr),
-          ...emp(C.surf,5),
+          C(nm,{bg:rowBg,fg:CLR.ink,bold:i<3,sz:10}),
+          NUM(v,fg,rowBg,11),
+          C(pct,{bg:rowBg,fg:'888888',sz:9,al:'center'}),
+          BAR(v,maxCo,fg,rowBg),
+          ...Array(N-4).fill(C('',{bg:rowBg,brd:false})),
         ]);
       });
-      DR.push(emp(C.bg,NCOLS));
 
-      // ── High-value segments ──
-      DR.push([S('  HIGH-VALUE CAREER SEGMENTS',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
-      DR.push([HDR('Segment'),HDR('Count'),HDR('% Network'),HDR('Leverage'),HDR('Action'),HDR(''),HDR(''),HDR('')]);
-      [{name:'Founder / C-Suite',n:founders,lev:'★★★★★',act:'Cold DM — lead with your work',fg:C.brick,bg:C.brickLt},
-       {name:'YC Network',n:yc,lev:'★★★★★',act:'DM immediately — apply via YC',fg:'A84832',bg:C.brickLt},
-       {name:'FAANG / Big Tech',n:faang,lev:'★★★★☆',act:'Seek referrals for FAANG interviews',fg:C.navy,bg:C.navyLt},
-       {name:'AI Companies',n:ai,lev:'★★★★☆',act:'Early-stage equity opportunities',fg:C.green,bg:C.greenLt},
-       {name:'Engineering Manager',n:engMgr,lev:'★★★☆☆',act:'Hiring decision makers — reach out',fg:C.teal,bg:C.tealLt},
-       {name:'Recruiter / HR',n:recruiters,lev:'★★★☆☆',act:'Send CV + LinkedIn note',fg:C.purple,bg:C.purpleLt},
+      DR.push(E(CLR.warm2));
+
+      /* ── HIGH-VALUE SEGMENTS ── */
+      DR.push([SECHDR('  🎯  HIGH-VALUE CAREER SEGMENTS'),...Array(N-1).fill(BLANK(CLR.headerBg))]);
+      DR.push([HDRROW('Segment'),HDRROW('Count'),HDRROW('% Network'),HDRROW('Career Leverage'),HDRROW('Recommended Action'),...Array(N-5).fill(HDRROW(''))]);
+
+      [
+        {cat:'Founder / C-Suite',  n:founders, lev:'★★★★★  Highest',  act:'Cold DM — lead with your best work'},
+        {cat:'YC Network',         n:yc,       lev:'★★★★★  Highest',  act:'DM immediately — apply directly via YC'},
+        {cat:'FAANG / Big Tech',   n:faang,    lev:'★★★★☆  Very High',act:'Request referrals before applying'},
+        {cat:'AI Companies',       n:ai,       lev:'★★★★☆  Very High',act:'Early-stage equity opportunities'},
+        {cat:'Engineering Manager',n:engMgr,   lev:'★★★☆☆  High',    act:'Reach out — direct hiring authority'},
+        {cat:'Recruiter / HR',     n:recruiters,lev:'★★★☆☆  High',   act:'Send tailored CV + brief LinkedIn note'},
       ].forEach(seg=>{
+        const cc=CLR.cats[seg.cat]||{bg:CLR.cream,fg:CLR.ink};
         const pct=total>0?((seg.n/total)*100).toFixed(1)+'%':'0%';
         DR.push([
-          S(seg.name,{bg:seg.bg,fg:seg.fg,bold:true,sz:10}),
-          {v:seg.n,t:'n',s:{font:{bold:true,sz:11,color:{rgb:seg.fg},name:'Calibri'},fill:{fgColor:{rgb:seg.bg}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-          S(pct,{bg:seg.bg,fg:C.ink3,sz:9,al:'center'}),
-          S(seg.lev,{bg:seg.bg,fg:seg.fg,bold:true,sz:9}),
-          S(seg.act,{bg:seg.bg,fg:C.ink3,sz:9}),
-          ...emp(seg.bg,3),
+          C(seg.cat,{bg:cc.bg,fg:cc.fg,bold:true,sz:10,brdColor:cc.fg+'44'}),
+          NUM(seg.n,cc.fg,cc.bg,11),
+          C(pct,{bg:cc.bg,fg:'888888',sz:9,al:'center',brdColor:cc.fg+'44'}),
+          C(seg.lev,{bg:cc.bg,fg:cc.fg,bold:true,sz:9,brdColor:cc.fg+'44'}),
+          C(seg.act,{bg:cc.bg,fg:'555555',sz:9,brdColor:cc.fg+'44'}),
+          ...Array(N-5).fill(C('',{bg:cc.bg,brdColor:cc.fg+'22'})),
         ]);
       });
 
-      /* ── Build dashboard ws ── */
-      const wsDash=XLSX.utils.aoa_to_sheet(DR.map(r=>r.map(c=>c&&typeof c==='object'?c.v??'':c??'')));
-      DR.forEach((row,ri)=>row.forEach((cd,ci)=>{
-        if(cd&&typeof cd==='object'&&cd.s){
-          const addr=XLSX.utils.encode_cell({r:ri,c:ci});
-          if(!wsDash[addr])wsDash[addr]={};
-          wsDash[addr].v=cd.v??'';wsDash[addr].t=cd.t||'s';wsDash[addr].s=cd.s;
-        }
-      }));
+      /* ── Build dashboard worksheet ── */
+      const dashColW=[24,24,24,24,24,24,24,24];
+      const dashRowH=[];
 
-      // ── Hyperlinks on tile count cells (row index calculation) ──
-      // Tiles start at DR row 5 (0-indexed: row 4 after 4 header rows + gap)
-      // group 0 tiles: rows 4,5,6 (count,name,sub); group 1: rows 8,9,10; etc.
-      const TILE_START=4;
-      for(let g=0;g<Math.ceil(CAT_META.length/4);g++){
-        const countRowIdx=TILE_START+g*TILE_ROWS;
-        CAT_META.slice(g*4,(g+1)*4).forEach((m,ti)=>{
-          const addr=XLSX.utils.encode_cell({r:countRowIdx,c:ti});
-          if(!wsDash[addr])wsDash[addr]={v:catCounts[m.cat]||0,t:'n'};
-          wsDash[addr].l={Target:`#'${m.sn}'!A1`,Tooltip:`Go to ${m.cat}`};
-        });
-        // Also link the name row
-        const nameRowIdx=TILE_START+g*TILE_ROWS+1;
-        CAT_META.slice(g*4,(g+1)*4).forEach((m,ti)=>{
-          const addr=XLSX.utils.encode_cell({r:nameRowIdx,c:ti});
-          if(!wsDash[addr])wsDash[addr]={v:m.cat,t:'s'};
-          wsDash[addr].l={Target:`#'${m.sn}'!A1`,Tooltip:`Click to view ${m.cat}`};
-          if(!wsDash[addr].s&&DR[nameRowIdx]&&DR[nameRowIdx][ti]&&DR[nameRowIdx][ti].s)
-            wsDash[addr].s=DR[nameRowIdx][ti].s;
-        });
+      // Row 0 title
+      dashRowH[0]={hpt:40};
+      // Row 1 subtitle
+      dashRowH[1]={hpt:20};
+      // Row 2 spacer
+      dashRowH[2]={hpt:6};
+      // Row 3 instruction
+      dashRowH[3]={hpt:24};
+      // Row 4 spacer
+      dashRowH[4]={hpt:6};
+      // Tile rows
+      const tileGroupCount=Math.ceil(CAT_META.length/4);
+      for(let g=0;g<tileGroupCount;g++){
+        const base=5+g*4;
+        dashRowH[base]={hpt:52};   // count
+        dashRowH[base+1]={hpt:22}; // name
+        dashRowH[base+2]={hpt:16}; // sub
+        dashRowH[base+3]={hpt:6};  // gap
       }
 
-      // ── Merges: title rows + tile cells (each tile spans 1 col for now, layout is 4 wide into 8 cols = 2 cols each) ──
+      const wsDash=buildSheet(DR,dashColW,dashRowH);
+
+      // Merges
       const merges=[
-        {s:{r:0,c:0},e:{r:0,c:NCOLS-1}}, // title
-        {s:{r:1,c:0},e:{r:1,c:NCOLS-1}}, // subtitle
-        {s:{r:3,c:0},e:{r:3,c:NCOLS-1}}, // click instruction
+        {s:{r:0,c:0},e:{r:0,c:N-1}},  // title
+        {s:{r:1,c:0},e:{r:1,c:N-1}},  // subtitle
+        {s:{r:2,c:0},e:{r:2,c:N-1}},  // spacer
+        {s:{r:3,c:0},e:{r:3,c:N-1}},  // instruction
+        {s:{r:4,c:0},e:{r:4,c:N-1}},  // spacer
       ];
-      // Merge each tile 2-col wide across 3 rows (count, name, sub)
-      for(let g=0;g<Math.ceil(CAT_META.length/4);g++){
-        const base=TILE_START+g*TILE_ROWS;
-        for(let t=0;t<Math.min(4,CAT_META.length-g*4);t++){
-          const c=t;
-          merges.push({s:{r:base,c},e:{r:base,c}});   // count cell - no merge needed (already 1 col)
-          merges.push({s:{r:base+1,c},e:{r:base+1,c}}); // name
-          merges.push({s:{r:base+2,c},e:{r:base+2,c}}); // sub
+
+      // Find and merge section headers (they span full 8 cols)
+      // Walk DR and merge any row that is a single-cell-then-blanks header pattern
+      DR.forEach((row,ri)=>{
+        if(ri<=4)return;
+        const first=row[0];
+        if(first&&first.s&&first.s.font&&first.s.font.bold&&first.s.fill&&
+           (first.s.fill.fgColor.rgb===CLR.headerBg||first.s.fill.fgColor.rgb==='3D2A1A')&&
+           first.s.alignment.horizontal==='left'){
+          merges.push({s:{r:ri,c:0},e:{r:ri,c:N-1}});
         }
-        // merge the KPI section header
-      }
-      // Merge KPI and section headers
-      const kpiBase=TILE_START+Math.ceil(CAT_META.length/4)*TILE_ROWS+1;
-      merges.push({s:{r:kpiBase,c:0},e:{r:kpiBase,c:NCOLS-1}});
+        // Also merge KPI-style header row
+        if(first&&first.s&&first.s.fill&&first.s.fill.fgColor.rgb===CLR.headerBg&&
+           first.s.font&&first.s.font.sz===11){
+          merges.push({s:{r:ri,c:0},e:{r:ri,c:N-1}});
+        }
+      });
 
       wsDash['!merges']=merges;
-
-      // Row heights
-      const rh=DR.map(()=>({hpt:20}));
-      rh[0]={hpt:38};rh[1]={hpt:18};rh[3]={hpt:24};
-      // Tile rows get taller
-      for(let g=0;g<Math.ceil(CAT_META.length/4);g++){
-        const base=TILE_START+g*TILE_ROWS;
-        rh[base]={hpt:42};    // count
-        rh[base+1]={hpt:22};  // name
-        rh[base+2]={hpt:18};  // sub
-        rh[base+3]={hpt:8};   // gap
-      }
-      wsDash['!rows']=rh;
-      wsDash['!cols']=[{wch:22},{wch:22},{wch:22},{wch:22},{wch:22},{wch:22},{wch:22},{wch:22}];
       XLSX.utils.book_append_sheet(wb,wsDash,'📊 Dashboard');
 
-      /* ══════════════════════════════
+      /* ═══════════════════════════════════════════
          CATEGORY SHEETS
-      ══════════════════════════════ */
+      ═══════════════════════════════════════════ */
       CAT_META.forEach(m=>{
         const rows=(G.cats[m.cat]||[]).slice();
         if(!rows.length)return;
+        const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink,accent:CLR.ink};
 
         const aoa=[];
-        // Title
+
+        // Title row
         aoa.push([
-          S(`${m.cat.toUpperCase()}`,{bg:C.hDark,fg:C.wht,bold:true,sz:14,brd:false}),
-          S(`${rows.length.toLocaleString()} connections`,{bg:C.hDark,fg:'AAAAAA',sz:10,al:'right',it:true,brd:false}),
-          ...Array(5).fill(S('',{bg:C.hDark,brd:false}))
+          C(m.cat.toUpperCase(),{bg:CLR.headerBg,fg:CLR.offwhite,bold:true,sz:14,al:'left',brd:false}),
+          C(`${rows.length.toLocaleString()} connections`,{bg:CLR.headerBg,fg:'C8B8A8',sz:10,al:'right',it:true,brd:false}),
+          ...Array(5).fill(BLANK(CLR.headerBg))
         ]);
-        // Back link row
+
+        // Coloured accent strip + back link
+        const backCell=C('← Click here to return to the Dashboard sheet',{bg:cc.bg,fg:cc.fg,sz:9,it:true,brd:false,underline:true});
+        backCell.l={Target:"#'📊 Dashboard'!A1",Tooltip:'Back to Dashboard'};
+        aoa.push([backCell,...Array(6).fill(BLANK(cc.bg))]);
+
+        // Stats strip
+        const n=rows.length;
+        const pct=total>0?((n/total)*100).toFixed(1):0;
         aoa.push([
-          S('← Click here to go back to Dashboard',{bg:m.bg,fg:m.fg,sz:9,it:true,brd:false}),
-          ...Array(6).fill(S('',{bg:m.bg,brd:false}))
+          C(`${pct}% of your total network  ·  ${rows.filter(r=>r.isYC).length} YC  ·  ${rows.filter(r=>r.isFAANG).length} FAANG  ·  ${rows.filter(r=>r.isAI).length} AI companies`,
+            {bg:cc.bg,fg:cc.fg,sz:9,al:'left',it:true,brd:false}),
+          ...Array(6).fill(BLANK(cc.bg))
         ]);
-        // Col headers
-        aoa.push(['#','First Name','Last Name','Company','Position / Title','Connected On','Tags'].map(h=>HDR(h)));
-        // Data
+
+        // Spacer
+        aoa.push(Array(7).fill(BLANK(CLR.warm2)));
+
+        // Column headers
+        aoa.push(['#','First Name','Last Name','Company','Position / Title','Connected On','Tags'].map((h,i)=>
+          C(h,{bg:CLR.headerBg,fg:CLR.white,bold:true,sz:10,al:i===0?'center':'left',brdColor:CLR.headerBg+'44'})
+        ));
+
+        // Data rows
         rows.forEach((r,i)=>{
-          const rb=i%2===0?C.surf:C.surf2;
+          const rb=i%2===0?CLR.cream:CLR.warm;
           const tags=[r.isYC?'YC':'',r.isFAANG?'FAANG':'',r.isAI?'AI':''].filter(Boolean).join(' · ');
-          const tagFg=r.isYC?C.gold:r.isFAANG?C.navy:r.isAI?C.green:C.ink3;
-          const tagBg=r.isYC?C.goldLt:r.isFAANG?C.navyLt:r.isAI?C.greenLt:rb;
+          const tagFg=r.isYC?CLR.amber:r.isFAANG?CLR.navy:r.isAI?CLR.forest:CLR.muted;
+          const tagBg=r.isYC?CLR.amberLt:r.isFAANG?CLR.navyLt:r.isAI?CLR.forestLt:rb;
           aoa.push([
-            {v:i+1,t:'n',s:{font:{sz:9,color:{rgb:C.ink4},name:'Calibri'},fill:{fgColor:{rgb:rb}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
-            S(r.fn,{bg:rb,sz:10}),S(r.ln,{bg:rb,sz:10}),
-            S(r.co,{bg:rb,fg:m.fg,bold:i<5,sz:10}),
-            S(r.pos,{bg:rb,fg:C.ink3,sz:9}),
-            S(r.con||'—',{bg:rb,fg:C.ink4,sz:9,al:'center'}),
-            tags?S(tags,{bg:tagBg,fg:tagFg,bold:true,sz:9,al:'center'}):S('',{bg:rb}),
+            NUM(i+1,'AAAAAA',rb,9),
+            C(r.fn,{bg:rb,fg:CLR.ink,sz:10}),
+            C(r.ln,{bg:rb,fg:CLR.ink,sz:10}),
+            C(r.co,{bg:rb,fg:cc.accent,bold:i<5,sz:10}),
+            C(r.pos,{bg:rb,fg:'666666',sz:9}),
+            C(r.con||'—',{bg:rb,fg:CLR.muted,sz:9,al:'center'}),
+            tags?C(tags,{bg:tagBg,fg:tagFg,bold:true,sz:9,al:'center',brdColor:tagFg+'44'}):BLANK(rb),
           ]);
         });
 
-        const ws=XLSX.utils.aoa_to_sheet(aoa.map(r=>r.map(c=>c&&typeof c==='object'?c.v??'':c??'')));
-        aoa.forEach((row,ri)=>row.forEach((cd,ci)=>{
-          if(cd&&typeof cd==='object'&&cd.s){
-            const addr=XLSX.utils.encode_cell({r:ri,c:ci});
-            if(!ws[addr])ws[addr]={};
-            ws[addr].v=cd.v??'';ws[addr].t=cd.t||'s';ws[addr].s=cd.s;
-          }
-        }));
-
-        // Back link hyperlink
-        ws['A2']={v:'← Click here to go back to Dashboard',t:'s',
-          s:{font:{sz:9,color:{rgb:m.fg},name:'Calibri',italic:true},fill:{fgColor:{rgb:m.bg}},alignment:{horizontal:'left',vertical:'center'}},
-          l:{Target:"#'📊 Dashboard'!A1",Tooltip:'Back to Dashboard'}};
-
-        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}}];
-        ws['!cols']=[{wch:5},{wch:14},{wch:15},{wch:28},{wch:34},{wch:14},{wch:16}];
-        ws['!rows']=[{hpt:34},{hpt:18},{hpt:22},...rows.map(()=>({hpt:20}))];
+        const ws=buildSheet(aoa,
+          [5,14,15,28,34,14,16],
+          [{hpt:34},{hpt:16},{hpt:16},{hpt:6},{hpt:22},...rows.map(()=>({hpt:20}))]
+        );
+        ws['!merges']=[
+          {s:{r:0,c:0},e:{r:0,c:6}},
+          {s:{r:1,c:0},e:{r:1,c:6}},
+          {s:{r:2,c:0},e:{r:2,c:6}},
+          {s:{r:3,c:0},e:{r:3,c:6}},
+        ];
         XLSX.utils.book_append_sheet(wb,ws,m.sn);
       });
 
-      XLSX.writeFile(wb,'NetLens_Analytics.xlsx');
+      /* ── Write file ── */
+      XLSX.writeFile(wb,'NetLens_Analytics.xlsx',{cellStyles:true,bookSST:false});
       btn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor" style="width:15px;height:15px"><path d="M8 11.5l-3.5-3.5H7V3h2v5h2.5L8 11.5z"/><rect x="2" y="13" width="12" height="1.5" rx=".6"/></svg> Download Excel Analytics';
       btn.disabled=false;
-    }catch(e){console.error(e);btn.textContent='⚠ Error — try again';btn.disabled=false}
+    }catch(e){
+      console.error('Excel error:',e);
+      btn.textContent='⚠ Error — try again';
+      btn.disabled=false;
+    }
   },200);
 }
 
