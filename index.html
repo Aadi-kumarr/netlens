@@ -6,342 +6,550 @@
 <title>NetLens — LinkedIn Network Analytics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F5EDE0;--bg2:#EDE3D4;--bg3:#E5D8C5;
-  --surface:#FFFAF4;--surface2:#F9F2E8;
-  --brick:#8B3A2A;--brick2:#A84832;--brick-lt:#F0DDD8;--brick-pale:#FAF0EE;
-  --ink:#1A1008;--ink2:#3D2B1A;--ink3:#7A6450;--ink4:#B09880;
-  --border:#D4C4B0;--border2:#C0AE98;
-  --gold:#C4860A;--gold-lt:#FBF0D8;
-  --green:#2A5C3F;--green-lt:#E2F0E8;
-  --font-display:'Playfair Display',Georgia,serif;
-  --font-body:'DM Sans',sans-serif;
-  --font-mono:'DM Mono',monospace;
-  --r:10px;--r-lg:16px;
+  --cream:#FAF7F2;
+  --warm:#F2EDE4;
+  --warm2:#E8E0D4;
+  --warm3:#D9CFBF;
+  --rust:#C4522A;
+  --rust2:#A84320;
+  --rust-lt:#FAEEE8;
+  --rust-pale:#FDF6F3;
+  --amber:#D4880A;
+  --amber-lt:#FBF2DC;
+  --forest:#2D5A3D;
+  --forest-lt:#E4F0E8;
+  --navy:#1C3A5E;
+  --navy-lt:#E6EEF7;
+  --plum:#5C2D6E;
+  --plum-lt:#F2EAF7;
+  --ink:#1A140E;
+  --ink2:#3D2E22;
+  --ink3:#7A6A5A;
+  --ink4:#B0A090;
+  --border:#DDD5C8;
+  --border2:#C8BFB0;
+  --shadow:rgba(26,20,14,.08);
+  --shadow2:rgba(26,20,14,.14);
+  --font-serif:'Instrument Serif',Georgia,serif;
+  --font-sans:'Outfit',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --r:12px;--r-lg:20px;--r-xl:28px;
 }
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.65;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Ccircle cx='1' cy='1' r='.4' fill='%23000' opacity='.03'/%3E%3C/svg%3E")}
+body{background:var(--cream);color:var(--ink);font-family:var(--font-sans);font-size:15px;line-height:1.65;overflow-x:hidden}
 
-/* ── Nav ── */
-nav{position:sticky;top:0;z-index:100;background:rgba(245,237,224,.92);backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--border);height:58px;display:flex;align-items:center;
-  justify-content:space-between;padding:0 3rem}
-.logo{font-family:var(--font-display);font-size:22px;font-weight:900;color:var(--brick);letter-spacing:-.02em}
-.logo span{color:var(--ink)}
-.nav-links{display:flex;gap:2rem;list-style:none}
-.nav-links a{font-size:13px;font-weight:500;color:var(--ink3);text-decoration:none;
-  letter-spacing:.05em;text-transform:uppercase;transition:color .2s}
-.nav-links a:hover{color:var(--brick)}
-.nav-stats{display:flex;gap:10px;align-items:center}
-.nav-stat{display:flex;align-items:center;gap:6px;
-  background:var(--brick-pale);border:1px solid var(--brick-lt);
-  border-radius:20px;padding:5px 12px}
-.stat-dot{width:6px;height:6px;border-radius:50%;background:var(--brick);
-  animation:pulse 2s ease-in-out infinite}
-.stat-dot.green{background:var(--green)}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
-.stat-text{font-family:var(--font-mono);font-size:11px;color:var(--brick)}
-.stat-text.green{color:var(--green)}
+/* ── subtle paper grain ── */
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E");
+  opacity:.6}
 
-/* ── Hero ── */
-.hero{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:88px 3rem 72px;text-align:center}
-.hero-kicker{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--brick);margin-bottom:20px;display:inline-flex;align-items:center;gap:10px}
-.hero-kicker::before,.hero-kicker::after{content:'';width:28px;height:1px;background:var(--brick);opacity:.5}
-.hero h1{font-family:var(--font-display);font-size:clamp(44px,7vw,82px);
-  font-weight:900;line-height:1.0;letter-spacing:-.03em;color:var(--ink);margin-bottom:20px}
-.hero h1 em{color:var(--brick);font-style:italic}
-.hero-sub{font-size:18px;color:var(--ink3);line-height:1.6;max-width:560px;
-  margin:0 auto 44px;font-weight:300}
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(250,247,242,.88);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  height:62px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 2.5rem;
+}
+.logo{
+  font-family:var(--font-serif);font-size:24px;color:var(--rust);
+  letter-spacing:-.01em;display:flex;align-items:center;gap:8px;
+}
+.logo-dot{width:8px;height:8px;background:var(--rust);border-radius:50%;margin-top:2px}
+.nav-links{display:flex;gap:1.8rem;list-style:none}
+.nav-links a{
+  font-size:13px;font-weight:500;color:var(--ink3);text-decoration:none;
+  letter-spacing:.04em;text-transform:uppercase;transition:color .2s;
+}
+.nav-links a:hover{color:var(--rust)}
+.nav-pills{display:flex;gap:8px;align-items:center}
+.nav-pill{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 13px;border-radius:20px;
+  font-family:var(--font-mono);font-size:11px;font-weight:500;
+  border:1px solid;transition:all .2s;
+}
+.nav-pill.visits{background:var(--rust-pale);border-color:rgba(196,82,42,.2);color:var(--rust)}
+.nav-pill.analyses{background:var(--forest-lt);border-color:rgba(45,90,61,.2);color:var(--forest)}
+.pulse{width:6px;height:6px;border-radius:50%;animation:pulse 2s ease-in-out infinite}
+.pulse.r{background:var(--rust)}.pulse.g{background:var(--forest)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 
-/* dual counter cards */
-.hero-counters{display:flex;justify-content:center;gap:16px;margin-bottom:40px;flex-wrap:wrap}
-.hc-card{display:flex;align-items:center;gap:14px;
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--r-lg);padding:16px 28px;
-  box-shadow:0 2px 0 var(--border);min-width:220px}
-.hc-num{font-family:var(--font-display);font-size:40px;font-weight:900;line-height:1}
-.hc-num.brick{color:var(--brick)}
-.hc-num.green{color:var(--green)}
-.hc-div{width:1px;height:36px;background:var(--border)}
-.hc-right{text-align:left}
-.hc-label{font-size:12px;font-weight:500;color:var(--ink);line-height:1.3}
-.hc-sub{font-family:var(--font-mono);font-size:10px;color:var(--ink4);margin-top:2px}
+/* ── HERO ── */
+.hero{
+  position:relative;z-index:1;
+  max-width:1000px;margin:0 auto;
+  padding:96px 2.5rem 80px;
+  text-align:center;
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--rust);margin-bottom:28px;
+  padding:6px 14px;background:var(--rust-pale);border:1px solid rgba(196,82,42,.2);border-radius:20px;
+}
+.hero h1{
+  font-family:var(--font-serif);
+  font-size:clamp(46px,7.5vw,86px);
+  line-height:.96;letter-spacing:-.03em;
+  color:var(--ink);margin-bottom:24px;
+}
+.hero h1 em{color:var(--rust);font-style:italic}
+.hero h1 .light{font-weight:300;color:var(--ink3)}
+.hero-sub{
+  font-size:17px;color:var(--ink3);line-height:1.65;
+  max-width:520px;margin:0 auto 52px;font-weight:300;
+}
 
-.hero-pills{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-.pill{background:var(--surface);border:1px solid var(--border);border-radius:20px;
-  padding:6px 14px;font-size:13px;color:var(--ink3)}
-.pill strong{color:var(--ink);font-weight:500}
+/* ── COUNTER CARDS ── */
+.counter-cards{display:flex;justify-content:center;gap:14px;margin-bottom:44px;flex-wrap:wrap}
+.cc{
+  display:flex;align-items:center;gap:14px;
+  background:#fff;border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:18px 26px;
+  box-shadow:0 2px 8px var(--shadow),0 0 0 0 transparent;
+  transition:box-shadow .25s,transform .25s;min-width:210px;
+}
+.cc:hover{box-shadow:0 6px 24px var(--shadow2);transform:translateY(-2px)}
+.cc-num{font-family:var(--font-serif);font-size:42px;line-height:1;font-weight:400}
+.cc-num.r{color:var(--rust)}.cc-num.g{color:var(--forest)}
+.cc-sep{width:1px;height:38px;background:var(--border)}
+.cc-text .label{font-size:13px;font-weight:500;color:var(--ink);line-height:1.3}
+.cc-text .sub{font-family:var(--font-mono);font-size:10px;color:var(--ink4);margin-top:3px}
 
-/* ── Sections ── */
-.section{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:0 3rem 72px}
-.sec-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--brick);margin-bottom:10px;display:flex;align-items:center;gap:10px}
-.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
-.sec-h2{font-family:var(--font-display);font-size:clamp(26px,3.5vw,38px);
-  font-weight:700;letter-spacing:-.02em;color:var(--ink);margin-bottom:8px}
-.sec-p{font-size:14px;color:var(--ink3);max-width:540px;margin-bottom:32px;line-height:1.6}
+/* ── PILLS ── */
+.hero-pills{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.hpill{
+  background:#fff;border:1px solid var(--border);border-radius:20px;
+  padding:6px 14px;font-size:13px;color:var(--ink3);
+  transition:border-color .2s,color .2s;
+}
+.hpill:hover{border-color:var(--rust);color:var(--ink)}
+.hpill strong{color:var(--ink);font-weight:600}
 
-/* ── Upload ── */
-#upload-zone{border:2px dashed var(--border2);border-radius:var(--r-lg);
-  padding:60px 40px;text-align:center;background:var(--surface);cursor:pointer;
-  transition:all .25s}
-#upload-zone:hover,#upload-zone.drag-over{border-color:var(--brick);background:var(--brick-pale)}
-.upload-icon{font-size:52px;margin-bottom:16px;display:block}
-.upload-title{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px}
-.upload-sub{color:var(--ink3);font-size:14px;margin-bottom:24px}
-.btn-primary{display:inline-block;padding:12px 28px;background:var(--brick);color:#FFF8F0;
-  font-family:var(--font-body);font-size:14px;font-weight:500;border-radius:8px;
-  cursor:pointer;border:none;transition:background .2s,transform .15s}
-.btn-primary:hover{background:var(--brick2);transform:translateY(-1px)}
+/* ── DIVIDER ── */
+.ornament{text-align:center;color:var(--border2);font-size:18px;margin:4px 0;letter-spacing:8px}
+
+/* ── SECTIONS ── */
+.section{position:relative;z-index:1;max-width:1160px;margin:0 auto;padding:0 2.5rem 72px}
+.sec-eyebrow{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--rust);margin-bottom:10px;
+  display:flex;align-items:center;gap:10px;
+}
+.sec-eyebrow::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+.sec-h2{
+  font-family:var(--font-serif);
+  font-size:clamp(28px,3.5vw,42px);
+  letter-spacing:-.02em;color:var(--ink);margin-bottom:10px;
+}
+.sec-p{font-size:14px;color:var(--ink3);max-width:500px;line-height:1.6;margin-bottom:32px}
+
+/* ── UPLOAD ── */
+#upload-zone{
+  border:2px dashed var(--border2);border-radius:var(--r-xl);
+  padding:64px 48px;text-align:center;background:#fff;cursor:pointer;
+  transition:all .25s;position:relative;overflow:hidden;
+}
+#upload-zone::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(196,82,42,.05) 0%,transparent 60%);
+  opacity:0;transition:opacity .3s;
+}
+#upload-zone:hover,#upload-zone.drag-over{
+  border-color:var(--rust);background:var(--rust-pale);
+}
+#upload-zone:hover::before,#upload-zone.drag-over::before{opacity:1}
+.upload-icon-wrap{
+  width:72px;height:72px;margin:0 auto 20px;
+  background:var(--warm);border:1px solid var(--border);
+  border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;
+  transition:all .25s;
+}
+#upload-zone:hover .upload-icon-wrap{background:var(--rust-pale);border-color:rgba(196,82,42,.3)}
+.upload-title{font-family:var(--font-serif);font-size:24px;color:var(--ink);margin-bottom:6px}
+.upload-sub{color:var(--ink3);font-size:14px;margin-bottom:26px;font-weight:300}
+.btn-upload{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 28px;background:var(--rust);color:#FFF8F5;
+  font-family:var(--font-sans);font-size:14px;font-weight:600;
+  border-radius:10px;cursor:pointer;border:none;
+  transition:background .2s,transform .15s,box-shadow .2s;
+  box-shadow:0 2px 8px rgba(196,82,42,.3);
+}
+.btn-upload:hover{background:var(--rust2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(196,82,42,.4)}
 .upload-note{margin-top:16px;font-size:11px;color:var(--ink4);font-family:var(--font-mono)}
-.upload-timing{margin-top:10px;font-size:12px;color:var(--brick2);font-family:var(--font-body);background:var(--brick-pale);border:1px solid var(--brick-lt);border-radius:8px;padding:10px 16px;display:inline-block}
+.upload-timing{
+  margin-top:12px;display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--rust2);
+  background:var(--rust-pale);border:1px solid rgba(196,82,42,.2);
+  border-radius:8px;padding:8px 14px;
+}
 #file-input{display:none}
 
-/* ── Processing ── */
-#processing{display:none;text-align:center;padding:56px 40px;
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)}
-.spinner{width:52px;height:52px;margin:0 auto 20px;
-  border:3px solid var(--border2);border-top-color:var(--brick);
-  border-radius:50%;animation:spin 1s linear infinite}
+/* ── PROCESSING ── */
+#processing{
+  display:none;text-align:center;padding:64px 40px;
+  background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);
+  box-shadow:0 2px 16px var(--shadow);
+}
+.spinner-wrap{width:56px;height:56px;margin:0 auto 24px;position:relative}
+.spinner{
+  width:56px;height:56px;border:3px solid var(--warm2);
+  border-top-color:var(--rust);border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+.spinner-dot{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:10px;height:10px;background:var(--rust);border-radius:50%;
+}
 @keyframes spin{to{transform:rotate(360deg)}}
-#processing h3{font-family:var(--font-display);font-size:20px;color:var(--ink);margin-bottom:6px}
+#processing h3{font-family:var(--font-serif);font-size:22px;color:var(--ink);margin-bottom:6px}
 #proc-status{font-family:var(--font-mono);font-size:12px;color:var(--ink3)}
 
-/* ── Dashboard ── */
+/* ── DASHBOARD ── */
 #dashboard{display:none}
-.dash-hd{display:flex;justify-content:space-between;align-items:flex-start;
-  margin-bottom:28px;gap:16px;flex-wrap:wrap}
-.dash-title{font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--ink)}
+.dash-hd{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:32px;gap:16px;flex-wrap:wrap;
+  padding:24px 28px;background:#fff;border:1px solid var(--border);
+  border-radius:var(--r-lg);box-shadow:0 2px 8px var(--shadow);
+}
+.dash-title{font-family:var(--font-serif);font-size:26px;color:var(--ink);letter-spacing:-.01em}
 .dash-sub{font-family:var(--font-mono);font-size:12px;color:var(--ink4);margin-top:4px}
-.btn-dl{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;
-  background:var(--green);color:#F0F7F3;font-family:var(--font-body);font-size:14px;
-  font-weight:500;border-radius:8px;cursor:pointer;border:none;transition:all .2s}
-.btn-dl:hover{background:#1F4A30;transform:translateY(-1px)}
+.btn-dl{
+  display:inline-flex;align-items:center;gap:8px;padding:11px 22px;
+  background:var(--forest);color:#F0F7F2;
+  font-family:var(--font-sans);font-size:14px;font-weight:600;
+  border-radius:10px;cursor:pointer;border:none;
+  box-shadow:0 2px 8px rgba(45,90,61,.3);
+  transition:all .2s;
+}
+.btn-dl:hover{background:#1F4A2E;transform:translateY(-1px);box-shadow:0 4px 16px rgba(45,90,61,.4)}
 .btn-dl svg{width:15px;height:15px;flex-shrink:0}
 
-/* KPI */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
-  padding:18px 20px;border-top:3px solid var(--border);transition:transform .2s}
-.kpi:hover{transform:translateY(-2px)}
-.kpi.k1{border-top-color:var(--brick)}.kpi.k2{border-top-color:var(--gold)}
-.kpi.k3{border-top-color:var(--green)}.kpi.k4{border-top-color:var(--ink2)}
-.kpi .lbl{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink4);margin-bottom:8px}
-.kpi .val{font-family:var(--font-display);font-size:34px;font-weight:900;color:var(--ink);line-height:1}
-.kpi.k1 .val{color:var(--brick)}.kpi.k2 .val{color:var(--gold)}.kpi.k3 .val{color:var(--green)}
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi{
+  background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  padding:20px 22px;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.kpi::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+}
+.kpi.k1::before{background:var(--rust)}
+.kpi.k2::before{background:var(--amber)}
+.kpi.k3::before{background:var(--forest)}
+.kpi.k4::before{background:var(--navy)}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 8px 24px var(--shadow2)}
+.kpi .lbl{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px}
+.kpi .val{font-family:var(--font-serif);font-size:38px;color:var(--ink);line-height:1}
+.kpi.k1 .val{color:var(--rust)}
+.kpi.k2 .val{color:var(--amber)}
+.kpi.k3 .val{color:var(--forest)}
 .kpi .sub{font-size:11px;color:var(--ink4);margin-top:6px;font-family:var(--font-mono)}
 
-/* Charts */
+/* ── CHART BOXES ── */
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px}
-.chart-title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.chart-box{
+  background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;
+  box-shadow:0 1px 4px var(--shadow);transition:box-shadow .2s;
+}
+.chart-box:hover{box-shadow:0 4px 16px var(--shadow2)}
+.chart-title{font-family:var(--font-serif);font-size:16px;color:var(--ink);margin-bottom:3px}
 .chart-sub{font-size:11px;color:var(--ink4);font-family:var(--font-mono);margin-bottom:18px}
 .chart-wrap{position:relative;height:220px}
 
-/* Co bars */
-.co-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
-.co-name{font-size:12px;color:var(--ink3);font-family:var(--font-mono);
-  width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.co-track{flex:1;height:18px;background:var(--bg3);border-radius:4px;overflow:hidden}
-.co-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:7px;transition:width .7s}
-.co-n{font-family:var(--font-mono);font-size:11px;color:var(--ink4);width:28px;text-align:right;flex-shrink:0}
+/* ── CO BARS ── */
+.co-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.co-name{font-size:12px;color:var(--ink3);font-family:var(--font-mono);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-track{flex:1;height:20px;background:var(--warm);border-radius:6px;overflow:hidden}
+.co-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:8px;transition:width .7s}
+.co-n{font-family:var(--font-mono);font-size:11px;color:var(--ink4);width:30px;text-align:right;flex-shrink:0}
 
-/* Cat tiles */
-.cat-section-title{font-size:14px;font-weight:500;color:var(--ink3);margin-bottom:12px}
+/* ── CAT TILES ── */
+.cat-label{
+  font-family:var(--font-serif);font-size:19px;color:var(--ink);
+  margin-bottom:14px;display:flex;align-items:center;gap:10px;
+}
+.cat-label::after{content:'';flex:1;height:1px;background:var(--border)}
 .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px}
-.cat-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
-  padding:16px;cursor:pointer;transition:all .2s;border-left:4px solid var(--border)}
-.cat-tile:hover{background:var(--surface2);transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.08)}
-.ct-count{font-family:var(--font-display);font-size:26px;font-weight:900;line-height:1;margin-bottom:3px}
-.ct-name{font-size:12px;font-weight:500;color:var(--ink3);margin-bottom:3px}
+.cat-tile{
+  background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  padding:18px 16px;cursor:pointer;
+  transition:all .22s;border-left:4px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.cat-tile::after{
+  content:'→';position:absolute;right:12px;bottom:12px;
+  font-size:14px;color:var(--border2);
+  transition:all .2s;
+}
+.cat-tile:hover{transform:translateY(-3px);box-shadow:0 8px 24px var(--shadow2)}
+.cat-tile:hover::after{color:inherit;right:10px}
+.ct-count{font-family:var(--font-serif);font-size:30px;line-height:1;margin-bottom:4px}
+.ct-name{font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:3px;letter-spacing:.01em}
 .ct-pct{font-family:var(--font-mono);font-size:10px;color:var(--ink4)}
-.ct-bar{height:3px;background:var(--bg3);border-radius:2px;margin-top:10px;overflow:hidden}
-.ct-bar-fill{height:100%;border-radius:2px}
+.ct-bar{height:3px;background:var(--warm2);border-radius:2px;margin-top:12px;overflow:hidden}
+.ct-bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
 
-/* ── Drawer ── */
-#modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(26,16,8,.45);backdrop-filter:blur(4px)}
-#modal{position:fixed;top:0;right:0;bottom:0;z-index:201;width:min(680px,95vw);
-  background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;
-  transform:translateX(100%);transition:transform .32s cubic-bezier(.22,.68,0,1.1)}
+/* ── DRAWER ── */
+#modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(26,20,14,.4);backdrop-filter:blur(6px)}
+#modal{
+  position:fixed;top:0;right:0;bottom:0;z-index:201;
+  width:min(700px,95vw);
+  background:var(--cream);border-left:1px solid var(--border);
+  overflow-y:auto;
+  transform:translateX(100%);transition:transform .32s cubic-bezier(.22,.68,0,1.1);
+  box-shadow:-8px 0 40px var(--shadow2);
+}
 #modal.open{transform:translateX(0)}
-.modal-hd{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);
-  padding:18px 22px;display:flex;justify-content:space-between;align-items:center;z-index:1}
-.modal-hd-title{font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--ink)}
-.modal-close{width:34px;height:34px;background:var(--bg2);border:1px solid var(--border);
+.modal-hd{
+  position:sticky;top:0;
+  background:rgba(250,247,242,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);padding:18px 24px;
+  display:flex;justify-content:space-between;align-items:center;z-index:1;
+}
+.modal-hd-title{font-family:var(--font-serif);font-size:18px;color:var(--ink)}
+.modal-close{
+  width:36px;height:36px;background:var(--warm);border:1px solid var(--border);
   border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:16px;color:var(--ink3);transition:all .15s}
-.modal-close:hover{background:var(--brick-lt);color:var(--brick)}
-.modal-body{padding:18px 22px}
-.tbl-search{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;
-  padding:9px 14px;font-family:var(--font-body);font-size:14px;color:var(--ink);
-  outline:none;margin-bottom:12px}
-.tbl-search:focus{border-color:var(--brick);box-shadow:0 0 0 2px rgba(139,58,42,.1)}
+  font-size:16px;color:var(--ink3);transition:all .15s;
+}
+.modal-close:hover{background:var(--rust-pale);color:var(--rust);border-color:rgba(196,82,42,.3)}
+.modal-body{padding:20px 24px}
+.tbl-search{
+  width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;font-family:var(--font-sans);font-size:14px;
+  color:var(--ink);outline:none;margin-bottom:12px;
+  transition:border-color .2s,box-shadow .2s;
+}
+.tbl-search:focus{border-color:var(--rust);box-shadow:0 0 0 3px rgba(196,82,42,.1)}
 .tbl-search::placeholder{color:var(--ink4)}
 .tbl-info{font-size:11px;color:var(--ink4);font-family:var(--font-mono);margin-bottom:10px}
-.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);box-shadow:0 1px 4px var(--shadow)}
 table{width:100%;border-collapse:collapse}
-thead tr{background:var(--bg3)}
-th{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.07em;
-  text-transform:uppercase;color:var(--ink3);padding:10px 12px;text-align:left;
-  border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:9px 12px;font-size:13px;color:var(--ink);border-bottom:1px solid var(--border)}
+thead tr{background:var(--warm)}
+th{
+  font-family:var(--font-mono);font-size:10px;font-weight:500;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);
+  padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+td{padding:10px 14px;font-size:13px;color:var(--ink);border-bottom:1px solid var(--border)}
 tbody tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:var(--bg2)}
-.tag-yc{font-size:10px;font-family:var(--font-mono);background:var(--gold-lt);color:var(--gold);
-  border:1px solid #E8C87A;padding:1px 6px;border-radius:3px}
-.tag-faang{font-size:10px;font-family:var(--font-mono);background:#E8EEF6;color:#1A3E6E;
-  border:1px solid #C0CFE8;padding:1px 6px;border-radius:3px}
-.tag-ai{font-size:10px;font-family:var(--font-mono);background:var(--green-lt);color:var(--green);
-  border:1px solid #B0D4BE;padding:1px 6px;border-radius:3px}
-.tbl-pg{display:flex;justify-content:space-between;align-items:center;margin-top:10px;
-  font-size:11px;color:var(--ink4)}
-.pg-btn{background:var(--bg2);border:1px solid var(--border);color:var(--ink3);
-  border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:var(--font-mono);transition:all .15s}
-.pg-btn:hover{border-color:var(--brick);color:var(--brick)}
+tbody tr:hover td{background:var(--warm)}
+.tag-yc{font-size:10px;font-family:var(--font-mono);background:var(--amber-lt);color:var(--amber);border:1px solid rgba(212,136,10,.25);padding:2px 7px;border-radius:4px}
+.tag-faang{font-size:10px;font-family:var(--font-mono);background:var(--navy-lt);color:var(--navy);border:1px solid rgba(28,58,94,.25);padding:2px 7px;border-radius:4px}
+.tag-ai{font-size:10px;font-family:var(--font-mono);background:var(--forest-lt);color:var(--forest);border:1px solid rgba(45,90,61,.25);padding:2px 7px;border-radius:4px}
+.tbl-pg{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:11px;color:var(--ink4)}
+.pg-btn{
+  background:#fff;border:1px solid var(--border);color:var(--ink3);
+  border-radius:7px;padding:5px 12px;cursor:pointer;
+  font-size:12px;font-family:var(--font-mono);transition:all .15s;
+}
+.pg-btn:hover{border-color:var(--rust);color:var(--rust)}
 .pg-btn:disabled{opacity:.3;cursor:not-allowed}
 
-/* ── Counter section ── */
-.counter-section{background:var(--surface);border-top:1px solid var(--border);
-  border-bottom:1px solid var(--border);padding:48px 3rem;margin-bottom:0}
-.counter-inner{max-width:700px;margin:0 auto;text-align:center}
-.counter-row{display:flex;justify-content:center;gap:40px;margin-bottom:16px;flex-wrap:wrap}
-.counter-block{text-align:center}
-.counter-big{font-family:var(--font-display);font-size:64px;font-weight:900;line-height:1;margin-bottom:6px}
-.counter-big.brick{color:var(--brick)}.counter-big.green{color:var(--green)}
-.counter-lbl{font-size:14px;color:var(--ink3);font-weight:400}
-.counter-divider{width:1px;background:var(--border);align-self:stretch}
-.live-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px}
-.live-text{font-family:var(--font-mono);font-size:12px;color:var(--ink4)}
+/* ── LIVE COUNTER SECTION ── */
+.counter-band{
+  background:var(--ink);padding:60px 2.5rem;
+  position:relative;overflow:hidden;
+}
+.counter-band::before{
+  content:'';position:absolute;top:-60px;left:-60px;
+  width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(196,82,42,.15),transparent 70%);
+}
+.counter-band::after{
+  content:'';position:absolute;bottom:-80px;right:-40px;
+  width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(45,90,61,.12),transparent 70%);
+}
+.counter-inner{max-width:700px;margin:0 auto;text-align:center;position:relative;z-index:1}
+.counter-eyebrow{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(250,247,242,.4);margin-bottom:28px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.counter-eyebrow::before,.counter-eyebrow::after{content:'';width:32px;height:1px;background:rgba(250,247,242,.15)}
+.counter-nums{display:flex;justify-content:center;gap:0;margin-bottom:16px;flex-wrap:wrap}
+.cnum-block{padding:0 48px;text-align:center}
+.cnum-block+.cnum-block{border-left:1px solid rgba(250,247,242,.1)}
+.cnum{font-family:var(--font-serif);font-size:72px;line-height:1;margin-bottom:8px}
+.cnum.r{color:var(--rust)}.cnum.g{color:#4CAF7D}
+.cnum-lbl{font-size:14px;color:rgba(250,247,242,.5);font-weight:300;letter-spacing:.02em}
+.live-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--font-mono);font-size:11px;color:rgba(250,247,242,.35);
+  margin-top:16px;
+}
 
-/* ── How to ── */
-.how-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:28px}
-.how-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
-  padding:22px 18px;position:relative}
-.how-card::after{content:attr(data-n);position:absolute;top:14px;right:16px;
-  font-family:var(--font-display);font-size:48px;font-weight:900;color:var(--bg3);line-height:1;pointer-events:none}
-.how-icon{font-size:28px;margin-bottom:10px;display:block}
-.how-title{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--ink);margin-bottom:6px}
-.how-desc{font-size:13px;color:var(--ink3);line-height:1.5}
-.how-tag{display:inline-block;margin-top:10px;font-family:var(--font-mono);font-size:10px;
-  background:var(--brick-pale);color:var(--brick);border:1px solid var(--brick-lt);padding:2px 8px;border-radius:4px}
+/* ── HOW IT WORKS ── */
+.how-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:32px}
+.how-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:28px 22px;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.how-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px var(--shadow2)}
+.how-num{
+  font-family:var(--font-serif);font-size:52px;color:var(--warm2);
+  line-height:1;margin-bottom:16px;
+}
+.how-icon{
+  width:44px;height:44px;border-radius:12px;
+  background:var(--warm);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-bottom:14px;
+  transition:all .2s;
+}
+.how-card:hover .how-icon{background:var(--rust-pale);border-color:rgba(196,82,42,.25)}
+.how-title{font-family:var(--font-serif);font-size:17px;color:var(--ink);margin-bottom:7px}
+.how-desc{font-size:13px;color:var(--ink3);line-height:1.55;font-weight:300}
+.how-tag{
+  display:inline-block;margin-top:14px;
+  font-family:var(--font-mono);font-size:10px;
+  background:var(--rust-pale);color:var(--rust);
+  border:1px solid rgba(196,82,42,.2);padding:3px 9px;border-radius:4px;
+}
 
-/* ── Guide ── */
+/* ── GUIDE ── */
 .guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:28px}
-.guide-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px}
-.guide-card h3{font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--ink);margin-bottom:8px}
-.guide-card p{font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.6}
+.guide-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);
+  padding:32px;box-shadow:0 1px 4px var(--shadow);
+}
+.guide-card h3{font-family:var(--font-serif);font-size:21px;color:var(--ink);margin-bottom:8px}
+.guide-card .lead{font-size:14px;color:var(--ink3);margin-bottom:18px;line-height:1.6;font-weight:300}
 .steps{list-style:none;counter-reset:s}
-.steps li{counter-increment:s;display:flex;gap:12px;align-items:flex-start;
-  font-size:13px;color:var(--ink3);padding:9px 0;border-bottom:1px solid var(--border)}
+.steps li{
+  counter-increment:s;display:flex;gap:12px;align-items:flex-start;
+  font-size:13px;color:var(--ink3);padding:10px 0;border-bottom:1px solid var(--border);
+  line-height:1.5;font-weight:300;
+}
 .steps li:last-child{border-bottom:none}
-.steps li::before{content:counter(s);display:flex;align-items:center;justify-content:center;
-  min-width:20px;height:20px;background:var(--brick-pale);border:1px solid var(--brick-lt);
-  border-radius:50%;font-family:var(--font-mono);font-size:10px;color:var(--brick);flex-shrink:0;margin-top:2px}
-.code-note{background:var(--bg3);border-radius:8px;padding:12px 14px;
-  font-family:var(--font-mono);font-size:11px;color:var(--ink3);margin-top:14px;line-height:1.7}
+.steps li::before{
+  content:counter(s);
+  display:flex;align-items:center;justify-content:center;
+  min-width:22px;height:22px;
+  background:var(--rust-pale);border:1px solid rgba(196,82,42,.25);
+  border-radius:50%;font-family:var(--font-mono);font-size:10px;
+  color:var(--rust);flex-shrink:0;margin-top:1px;
+}
+.code-note{
+  background:var(--warm);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;font-family:var(--font-mono);font-size:11px;
+  color:var(--ink3);margin-top:16px;line-height:1.8;
+}
+.code-note .ok{color:var(--forest)}
 
-footer{background:var(--bg3);border-top:1px solid var(--border);padding:24px 3rem;
-  text-align:center;font-size:12px;color:var(--ink4);font-family:var(--font-mono)}
-footer span{color:var(--brick)}
+/* ── FOOTER ── */
+footer{
+  background:var(--warm2);border-top:1px solid var(--border);
+  padding:28px 2.5rem;text-align:center;
+  font-size:12px;color:var(--ink4);font-family:var(--font-mono);
+}
+footer span{color:var(--rust)}
 
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.fade-up{animation:fadeUp .55s ease both}
-.d1{animation-delay:.08s}.d2{animation-delay:.16s}.d3{animation-delay:.24s}
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .6s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}
 
 @media(max-width:768px){
-  nav{padding:0 1.2rem}.section{padding:0 1.2rem 48px}
+  nav{padding:0 1.2rem}
+  .section{padding:0 1.2rem 48px}
   .kpi-grid,.charts-row,.cat-grid,.how-grid,.guide-grid{grid-template-columns:repeat(2,1fr)}
-  .hero{padding:56px 1.2rem 48px}.nav-links{display:none}
-  .hero-counters{flex-direction:column;align-items:center}
-  .counter-row{gap:20px}
+  .hero{padding:60px 1.2rem 52px}
+  .nav-links{display:none}
+  .counter-cards,.counter-nums{flex-direction:column;align-items:center}
+  .cnum-block+.cnum-block{border-left:none;border-top:1px solid rgba(250,247,242,.1);padding-top:28px}
 }
 </style>
 </head>
 <body>
 
+<!-- NAV -->
 <nav>
-  <div class="logo">Net<span>Lens</span></div>
+  <div class="logo"><div class="logo-dot"></div>NetLens</div>
   <ul class="nav-links">
     <li><a href="#upload">Upload</a></li>
     <li><a href="#how-it-works">How it works</a></li>
     <li><a href="#guide">Guide</a></li>
   </ul>
-  <div class="nav-stats">
-    <div class="nav-stat">
-      <div class="stat-dot"></div>
-      <div class="stat-text" id="nav-visits">— visits</div>
-    </div>
-    <div class="nav-stat">
-      <div class="stat-dot green"></div>
-      <div class="stat-text green" id="nav-analyses">— analyses</div>
-    </div>
+  <div class="nav-pills">
+    <div class="nav-pill visits"><div class="pulse r"></div><span id="nav-visits">— visits</span></div>
+    <div class="nav-pill analyses"><div class="pulse g"></div><span id="nav-analyses">— analyses</span></div>
   </div>
 </nav>
 
+<!-- HERO -->
 <div class="hero">
-  <div class="hero-kicker fade-up">LinkedIn Network Intelligence</div>
-  <h1 class="fade-up d1">Decode your<br/><em>entire network</em><br/>in seconds.</h1>
-  <p class="hero-sub fade-up d2">Upload your LinkedIn connections export. Get full analytics, category breakdowns, and a downloadable Excel workbook — all inside your browser, no signup needed.</p>
+  <div class="hero-tag fade-up"><div class="pulse r"></div>LinkedIn Network Intelligence</div>
+  <h1 class="fade-up d1">Decode your<br/><em>entire network</em><br/><span class="light">in seconds.</span></h1>
+  <p class="hero-sub fade-up d2">Upload your LinkedIn connections export and get full analytics — category breakdowns, growth charts, top companies — plus a downloadable Excel workbook. All in your browser, nothing stored.</p>
 
-  <div class="hero-counters fade-up d2">
-    <div class="hc-card">
-      <div class="hc-num brick" id="hero-visits">—</div>
-      <div class="hc-div"></div>
-      <div class="hc-right">
-        <div class="hc-label">total website<br/>visitors</div>
-        <div class="hc-sub">Live · updates in real time</div>
-      </div>
+  <div class="counter-cards fade-up d2">
+    <div class="cc">
+      <div class="cc-num r" id="hero-visits">—</div>
+      <div class="cc-sep"></div>
+      <div class="cc-text"><div class="label">total website<br/>visitors</div><div class="sub">Live · real time</div></div>
     </div>
-    <div class="hc-card">
-      <div class="hc-num green" id="hero-analyses">—</div>
-      <div class="hc-div"></div>
-      <div class="hc-right">
-        <div class="hc-label">networks<br/>analysed</div>
-        <div class="hc-sub">Live · updates in real time</div>
-      </div>
+    <div class="cc">
+      <div class="cc-num g" id="hero-analyses">—</div>
+      <div class="cc-sep"></div>
+      <div class="cc-text"><div class="label">networks<br/>analysed</div><div class="sub">Live · real time</div></div>
     </div>
   </div>
 
   <div class="hero-pills fade-up d3">
-    <div class="pill"><strong>16</strong> categories</div>
-    <div class="pill"><strong>0</strong> data stored</div>
-    <div class="pill"><strong>1-click</strong> Excel export</div>
-    <div class="pill"><strong>100%</strong> browser-side</div>
-    <div class="pill"><strong>Free</strong> forever</div>
+    <div class="hpill"><strong>16</strong> categories</div>
+    <div class="hpill"><strong>0</strong> data stored</div>
+    <div class="hpill"><strong>1-click</strong> Excel export</div>
+    <div class="hpill"><strong>100%</strong> browser-side</div>
+    <div class="hpill"><strong>Free</strong> forever</div>
   </div>
 </div>
 
-<!-- Upload -->
-<div class="section" id="upload">
-  <div class="sec-label">Step 01</div>
+<div class="ornament">· · ·</div>
+
+<!-- UPLOAD -->
+<div class="section" id="upload" style="padding-top:64px">
+  <div class="sec-eyebrow">Step 01</div>
   <h2 class="sec-h2">Upload your Connections.csv</h2>
-  <p class="sec-p">Your file never leaves your device. All analysis runs locally in JavaScript — nothing sent to any server.</p>
+  <p class="sec-p">Your file is processed entirely in your browser — nothing is sent to any server, ever.</p>
 
   <div id="upload-zone" onclick="document.getElementById('file-input').click()">
-    <span class="upload-icon">📊</span>
+    <div class="upload-icon-wrap">📊</div>
     <div class="upload-title">Drop your Connections.csv here</div>
     <div class="upload-sub">or click to browse your files</div>
-    <button class="btn-primary" onclick="event.stopPropagation();document.getElementById('file-input').click()">Choose File</button>
+    <button class="btn-upload" onclick="event.stopPropagation();document.getElementById('file-input').click()">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l-4 4h2.5v5h3V5H12L8 1z"/><rect x="2" y="13" width="12" height="1.5" rx=".6"/></svg>
+      Choose File
+    </button>
     <div class="upload-note">Accepts: Connections.csv from LinkedIn data export</div>
-    <div class="upload-timing">⏱ LinkedIn takes up to <strong>10 min – 1 hour</strong> to email your archive after you request it. Request it first, then come back here to upload.</div>
+    <div class="upload-timing">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+      LinkedIn takes <strong>10 min – 1 hour</strong> to email your archive. Request it first, then come back here.
+    </div>
     <input type="file" id="file-input" accept=".csv" onchange="handleFile(event)"/>
   </div>
 
   <div id="processing">
-    <div class="spinner"></div>
+    <div class="spinner-wrap"><div class="spinner"></div><div class="spinner-dot"></div></div>
     <h3>Analysing your network…</h3>
     <p id="proc-status">Reading connections…</p>
   </div>
 
+  <!-- DASHBOARD -->
   <div id="dashboard">
     <div class="dash-hd">
       <div>
@@ -353,7 +561,9 @@ footer span{color:var(--brick)}
         Download Excel Analytics
       </button>
     </div>
+
     <div class="kpi-grid" id="kpi-grid"></div>
+
     <div class="charts-row">
       <div class="chart-box">
         <div class="chart-title">Network by role category</div>
@@ -370,7 +580,7 @@ footer span{color:var(--brick)}
       <div class="chart-box">
         <div class="chart-title">Top companies in network</div>
         <div class="chart-sub">Most represented employers</div>
-        <div id="co-bars"></div>
+        <div id="co-bars" style="padding-top:4px"></div>
       </div>
       <div class="chart-box">
         <div class="chart-title">High-value segments</div>
@@ -378,12 +588,13 @@ footer span{color:var(--brick)}
         <div class="chart-wrap"><canvas id="qualChart"></canvas></div>
       </div>
     </div>
-    <div class="cat-section-title">🗂 Click any category to drill into those connections</div>
+
+    <div class="cat-label">Click any category to explore connections</div>
     <div class="cat-grid" id="cat-grid"></div>
   </div>
 </div>
 
-<!-- Drawer -->
+<!-- DRAWER -->
 <div id="modal-overlay" onclick="closeModal()"></div>
 <div id="modal">
   <div class="modal-hd">
@@ -409,80 +620,97 @@ footer span{color:var(--brick)}
   </div>
 </div>
 
-<!-- Live Counter Section -->
-<div class="counter-section">
+<!-- LIVE COUNTER BAND -->
+<div class="counter-band">
   <div class="counter-inner">
-    <div class="counter-row">
-      <div class="counter-block">
-        <div class="counter-big brick" id="global-visits">—</div>
-        <div class="counter-lbl">total visitors</div>
+    <div class="counter-eyebrow">Live public counts</div>
+    <div class="counter-nums">
+      <div class="cnum-block">
+        <div class="cnum r" id="global-visits">—</div>
+        <div class="cnum-lbl">total visitors</div>
       </div>
-      <div class="counter-divider"></div>
-      <div class="counter-block">
-        <div class="counter-big green" id="global-analyses">—</div>
-        <div class="counter-lbl">networks analysed</div>
+      <div class="cnum-block">
+        <div class="cnum g" id="global-analyses">—</div>
+        <div class="cnum-lbl">networks analysed</div>
       </div>
     </div>
-    <div class="live-row">
-      <div class="stat-dot"></div>
-      <div class="live-text">Live public counts · update in real time as people use NetLens</div>
+    <div class="live-badge">
+      <div class="pulse r"></div>
+      Updates in real time as people use NetLens
     </div>
   </div>
 </div>
 
-<!-- How it works -->
-<div class="section" id="how-it-works" style="padding-top:60px">
-  <div class="sec-label">How it works</div>
+<!-- HOW IT WORKS -->
+<div class="section" id="how-it-works" style="padding-top:64px">
+  <div class="sec-eyebrow">How it works</div>
   <h2 class="sec-h2">Four steps, under a minute</h2>
   <div class="how-grid">
-    <div class="how-card" data-n="1"><span class="how-icon">⚙️</span>
+    <div class="how-card">
+      <div class="how-num">01</div>
+      <div class="how-icon">⚙️</div>
       <div class="how-title">Export from LinkedIn</div>
-      <div class="how-desc">Settings → Data Privacy → Get a copy of your data → Connections. LinkedIn emails you within minutes.</div>
-      <div class="how-tag">LinkedIn Settings</div></div>
-    <div class="how-card" data-n="2"><span class="how-icon">📤</span>
+      <div class="how-desc">Settings → Data Privacy → Get a copy of your data → Connections. LinkedIn emails you the file.</div>
+      <div class="how-tag">LinkedIn Settings</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">02</div>
+      <div class="how-icon">📤</div>
       <div class="how-title">Upload the CSV</div>
       <div class="how-desc">Drop Connections.csv into the upload zone. Everything runs locally — zero data leaves your device.</div>
-      <div class="how-tag">100% Private</div></div>
-    <div class="how-card" data-n="3"><span class="how-icon">📊</span>
+      <div class="how-tag">100% Private</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">03</div>
+      <div class="how-icon">📊</div>
       <div class="how-title">Explore analytics</div>
-      <div class="how-desc">Instant charts, category tiles, high-value contacts. Click any tile to drill down — searchable and paginated.</div>
-      <div class="how-tag">Instant Results</div></div>
-    <div class="how-card" data-n="4"><span class="how-icon">📥</span>
+      <div class="how-desc">Instant charts, category tiles, high-value contacts. Click any tile to drill down and search.</div>
+      <div class="how-tag">Instant Results</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">04</div>
+      <div class="how-icon">📥</div>
       <div class="how-title">Download Excel</div>
-      <div class="how-desc">One click — full Excel workbook with dashboard charts + 16 category sheets, all sorted by relevance.</div>
-      <div class="how-tag">Excel Download</div></div>
+      <div class="how-desc">One click — full Excel workbook with a clickable dashboard + 16 category sheets.</div>
+      <div class="how-tag">Excel Export</div>
+    </div>
   </div>
 </div>
 
-<!-- Guide -->
+<!-- GUIDE -->
 <div class="section" id="guide" style="padding-top:20px">
-  <div class="sec-label">User Guide</div>
+  <div class="sec-eyebrow">User Guide</div>
   <h2 class="sec-h2">How to get your connections file</h2>
   <div class="guide-grid">
     <div class="guide-card">
       <h3>Exporting from LinkedIn</h3>
-      <p>Takes about 2 minutes. LinkedIn emails you a ZIP file with your data.</p>
+      <p class="lead">Takes about 2 minutes. LinkedIn emails you a ZIP with your data — can take up to 1 hour.</p>
       <ol class="steps">
-        <li>Click your profile picture → <strong>Settings & Privacy</strong></li>
+        <li>Click your profile photo → <strong>Settings & Privacy</strong></li>
         <li>Left sidebar → <strong>Data Privacy</strong></li>
         <li>Click <strong>"Get a copy of your data"</strong></li>
-        <li>Tick <strong>Connections</strong></li>
-        <li>Click <strong>"Request archive"</strong> — check your email</li>
-        <li>Download ZIP → extract → find <code>Connections.csv</code></li>
-        <li>Drop that CSV into the upload zone above ↑</li>
+        <li>Tick <strong>Connections</strong> → click <strong>Request archive</strong></li>
+        <li>Check your email → download the ZIP</li>
+        <li>Extract it → find <code>Connections.csv</code></li>
+        <li>Drop that file into the upload zone above ↑</li>
       </ol>
     </div>
     <div class="guide-card">
       <h3>What you get</h3>
-      <p>A complete career-intelligence analysis of your entire network.</p>
+      <p class="lead">A complete intelligence analysis of your entire LinkedIn network.</p>
       <ol class="steps">
         <li><strong>16 role categories</strong> — Founders, Recruiters, SWE, FAANG, YC, and more</li>
-        <li><strong>Growth timeline</strong> — see when your network grew</li>
+        <li><strong>Growth timeline</strong> — see exactly when your network grew</li>
         <li><strong>Top companies</strong> — most represented employers</li>
-        <li><strong>Drill-down</strong> — click a tile → see all, search, paginate</li>
-        <li><strong>Excel workbook</strong> — dashboard with charts + 16 sheets</li>
+        <li><strong>Drill-down drawer</strong> — click a tile, search, paginate</li>
+        <li><strong>Clickable Excel workbook</strong> — dashboard + 15 category sheets</li>
       </ol>
-      <div class="code-note">✓ Your data never leaves your browser<br/>✓ No account, no signup, no tracking<br/>✓ Works with any account size<br/>✓ Free, always</div>
+      <div class="code-note">
+        <span class="ok">✓</span> Your data never leaves your browser<br/>
+        <span class="ok">✓</span> No account, no signup, no tracking<br/>
+        <span class="ok">✓</span> Works with any LinkedIn account size<br/>
+        <span class="ok">✓</span> Free, always
+      </div>
     </div>
   </div>
 </div>
@@ -490,6 +718,8 @@ footer span{color:var(--brick)}
 <footer><p>NetLens — <span>100% client-side</span> · Your data never leaves your browser · Built with care</p></footer>
 
 <script>
+
+
 /* ═══════════════════════════════════════
    SUPABASE CONFIG
 ═══════════════════════════════════════ */
@@ -682,8 +912,8 @@ async function buildDashboard(filename){
 /* ═══════════════════════════════════════
    CHARTS
 ═══════════════════════════════════════ */
-const PAL=['#8B3A2A','#C4860A','#2A5C3F','#6B3D7A','#1A4A6E','#5A6B3A','#7A3B2A','#3A5A6B','#6B5A2A','#4A3A6B','#6B2A4A','#8B7A60'];
-const TC='#7A6450',GC='rgba(0,0,0,0.05)';
+const PAL=['#C4522A','#D4880A','#2D5A3D','#5C2D6E','#1C3A5E','#4A6B3A','#8B4A2A','#3A5A7B','#6B5A2A','#4A2A6B','#7B2A4A','#8B7A60'];
+const TC='#7A6A5A',GC='rgba(0,0,0,0.04)';
 function destroyChart(id){if(G.charts[id]){G.charts[id].destroy();delete G.charts[id]}}
 
 function buildCatChart(d){
@@ -692,7 +922,7 @@ function buildCatChart(d){
   const sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
   G.charts.cat=new Chart(document.getElementById('catChart'),{
     type:'doughnut',
-    data:{labels:sorted.map(x=>x[0]),datasets:[{data:sorted.map(x=>x[1]),backgroundColor:PAL,borderWidth:2,borderColor:'#FFFAF4'}]},
+    data:{labels:sorted.map(x=>x[0]),datasets:[{data:sorted.map(x=>x[1]),backgroundColor:PAL,borderWidth:2,borderColor:'#FAF7F2'}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
       plugins:{legend:{position:'right',labels:{color:TC,font:{size:10,family:'DM Mono'},padding:8,boxWidth:10}},
         tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw.toLocaleString()}`}}}}
@@ -709,7 +939,7 @@ function buildGrowthChart(d){
   G.charts.growth=new Chart(document.getElementById('growthChart'),{
     type:'bar',
     data:{labels:keys.map(k=>{const[y,m]=k.split('-');return new Date(y,m-1).toLocaleDateString('en-GB',{month:'short',year:'2-digit'})}),
-      datasets:[{data:vals,backgroundColor:vals.map(v=>v===maxV?'#8B3A2A':v>100?'#C4860A':'#D4C4B0'),borderWidth:0,borderRadius:3}]},
+      datasets:[{data:vals,backgroundColor:vals.map(v=>v===maxV?'#C4522A':v>100?'#D4880A':'#D9CFBF'),borderWidth:0,borderRadius:3}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw.toLocaleString()} connections`}}},
       scales:{x:{ticks:{color:TC,font:{size:8},maxRotation:45,autoSkip:true,maxTicksLimit:18},grid:{display:false}},
@@ -720,7 +950,7 @@ function buildGrowthChart(d){
 function buildCoChart(d){
   const cnt={};d.forEach(r=>{if(r.co)cnt[r.co]=(cnt[r.co]||0)+1});
   const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10),maxV=top[0]?.[1]||1;
-  const FILLS=['#8B3A2A','#A84832','#C46050','#C4860A','#D4960E','#E0AA30','#2A5C3F','#3A7A52','#4A9A68','#6B3D7A'];
+  const FILLS=['#C4522A','#D4880A','#2D5A3D','#1C3A5E','#5C2D6E','#A84320','#3A7A52','#4A9A68','#2C5A8E','#7A4A20'];
   document.getElementById('co-bars').innerHTML=top.map(([n,v],i)=>`
     <div class="co-row"><div class="co-name" title="${n}">${n}</div>
     <div class="co-track"><div class="co-fill" style="width:${Math.round(v/maxV*100)}%;background:${FILLS[i%FILLS.length]}">
@@ -735,7 +965,7 @@ function buildQualChart(d,faang,yc,founders){
     type:'bar',
     data:{labels:['FAANG','Founders','Eng Mgrs','AI Cos','Recruiters','YC Founders'],
       datasets:[{data:[faang,founders,em,ai,rec,yc],
-        backgroundColor:['#8B3A2A','#C4860A','#2A5C3F','#6B3D7A','#1A4A6E','#A84832'],
+        backgroundColor:['#C4522A','#D4880A','#2D5A3D','#5C2D6E','#1C3A5E','#A84320'],
         borderWidth:0,borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw.toLocaleString()}`}}},
@@ -744,11 +974,11 @@ function buildQualChart(d,faang,yc,founders){
   });
 }
 
-const CAT_CLR={'Founder / C-Suite':'#8B3A2A','SWE / Engineer':'#1A4A6E','Senior / Staff SWE':'#2A5C3F',
-  'Engineering Manager':'#3A5A2A','Recruiter / HR':'#6B3D7A','Product Manager':'#7A3B2A',
-  'Data Science / ML':'#2A5C4E','Director / VP':'#5A4A3A','Investor / VC':'#C4860A',
-  'Student / Intern':'#7A7060','Analyst / Consultant':'#6A6050','FAANG / Big Tech':'#1A3A6E',
-  'YC Network':'#A84832','AI Companies':'#2A6A4A','Other':'#8A8070'};
+const CAT_CLR={'Founder / C-Suite':'#C4522A','SWE / Engineer':'#1C3A5E','Senior / Staff SWE':'#2D5A3D',
+  'Engineering Manager':'#3A5A2A','Recruiter / HR':'#5C2D6E','Product Manager':'#8B4A2A',
+  'Data Science / ML':'#2D5A4E','Director / VP':'#5A4A3A','Investor / VC':'#D4880A',
+  'Student / Intern':'#7A7060','Analyst / Consultant':'#6A6050','FAANG / Big Tech':'#1C3A5E',
+  'YC Network':'#A84320','AI Companies':'#2D6A4A','Other':'#8A8070'};
 
 function buildCatTiles(total){
   const allCats=['Founder / C-Suite','SWE / Engineer','Senior / Staff SWE','Engineering Manager',
@@ -789,7 +1019,7 @@ function renderTable(){
   document.getElementById('tbl-info').textContent=`Showing ${start+1}–${Math.min(start+G.modalPageSize,filtered.length)} of ${filtered.length.toLocaleString()}`;
   document.getElementById('tbl-body').innerHTML=slice.map((r,i)=>{
     const tags=[r.isYC?'<span class="tag-yc">YC</span>':'',r.isFAANG?'<span class="tag-faang">FAANG</span>':'',r.isAI?'<span class="tag-ai">AI</span>':''].filter(Boolean).join(' ');
-    const name=r.url?`<a href="${r.url}" target="_blank" rel="noopener" style="color:var(--brick);text-decoration:none;font-weight:500">${r.fn} ${r.ln}</a>`:`${r.fn} ${r.ln}`;
+    const name=r.url?`<a href="${r.url}" target="_blank" rel="noopener" style="color:var(--rust);text-decoration:none;font-weight:500">${r.fn} ${r.ln}</a>`:`${r.fn} ${r.ln}`;
     return`<tr><td style="color:var(--ink4);font-family:var(--font-mono)">${start+i+1}</td>
       <td>${name}</td>
       <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.co}">${r.co}</td>
@@ -806,385 +1036,348 @@ function renderTable(){
    EXCEL DOWNLOAD — improved UI, no score,
    dashboard sheet with charts as data viz
 ═══════════════════════════════════════ */
+
 function downloadExcel(){
   const btn=document.querySelector('.btn-dl');
   btn.textContent='⏳ Generating…';btn.disabled=true;
   setTimeout(()=>{
     try{
       const wb=XLSX.utils.book_new();
-      const d=G.all, total=d.length;
+      const d=G.all,total=d.length;
 
-      /* ── colour constants ── */
+      /* ── colours ── */
       const C={
-        headerDark:'0A2540', headerMid:'1E3A5F', headerLight:'2C5282',
-        brick:'8B3A2A', brickLt:'FAF0EE', brickPale:'FDF5F3',
-        gold:'C4860A', goldLt:'FBF0D8',
-        green:'2A5C3F', greenLt:'E2F0E8',
-        navy:'1A4A6E', navyLt:'E8EEF6',
-        purple:'6B3D7A', purpleLt:'F3EEFF',
-        teal:'2A5C4E', tealLt:'E0F4EE',
-        slate:'5A4A3A', slateLt:'F5F0EB',
-        ink:'1A1008', ink3:'7A6450', ink4:'B09880',
-        surface:'FFFAF4', surface2:'F9F2E8', bg:'F5EDE0', bg3:'E5D8C5',
-        border:'D4C4B0', white:'FFFFFF',
-        catColors:{
-          'Founder / C-Suite':     {fg:'8B3A2A', bg:'FAF0EE'},
-          'SWE / Engineer':        {fg:'1A4A6E', bg:'E8EEF6'},
-          'Senior / Staff SWE':    {fg:'2A5C3F', bg:'E2F0E8'},
-          'Engineering Manager':   {fg:'3A5A2A', bg:'EAF3DE'},
-          'Recruiter / HR':        {fg:'6B3D7A', bg:'F3EEFF'},
-          'Product Manager':       {fg:'7A3B2A', bg:'FFF0EC'},
-          'Data Science / ML':     {fg:'2A5C4E', bg:'E0F4EE'},
-          'Director / VP':         {fg:'5A4A3A', bg:'F5F0EB'},
-          'Investor / VC':         {fg:'C4860A', bg:'FBF0D8'},
-          'Student / Intern':      {fg:'7A7060', bg:'F5F5F0'},
-          'Analyst / Consultant':  {fg:'6A6050', bg:'F5F2EE'},
-          'FAANG / Big Tech':      {fg:'1A3A6E', bg:'E5EDFA'},
-          'YC Network':            {fg:'A84832', bg:'FDECEA'},
-          'AI Companies':          {fg:'2A6A4A', bg:'E0F4EE'},
-          'Other':                 {fg:'8A8070', bg:'F5F5F0'},
-        }
+        hDark:'0A2540',hMid:'1E3A5F',
+        brick:'8B3A2A',brickLt:'FAF0EE',brickPale:'FDF5F3',
+        gold:'C4860A',goldLt:'FBF0D8',
+        green:'2A5C3F',greenLt:'E2F0E8',
+        navy:'1A4A6E',navyLt:'E8EEF6',
+        purple:'6B3D7A',purpleLt:'F3EEFF',
+        teal:'2A5C4E',tealLt:'E0F4EE',
+        slate:'5A4A3A',slateLt:'F5F0EB',
+        pink:'8B2A5C',pinkLt:'FDECEA',
+        ink:'1A1008',ink3:'7A6450',ink4:'B09880',
+        surf:'FFFAF4',surf2:'F9F2E8',bg:'F5EDE0',bg3:'E5D8C5',
+        bdr:'D4C4B0',wht:'FFFFFF',
       };
 
-      /* ── style builders ── */
-      const borderAll=(color=C.border)=>({
-        top:{style:'thin',color:{rgb:color}},bottom:{style:'thin',color:{rgb:color}},
-        left:{style:'thin',color:{rgb:color}},right:{style:'thin',color:{rgb:color}}
-      });
-      const borderBottom=(color=C.border,style='thin')=>({bottom:{style,color:{rgb:color}}});
+      const CAT_META=[
+        {cat:'Founder / C-Suite',   sn:'Founder-C-Suite',    fg:C.brick,  bg:C.brickLt,  sub:'Highest leverage · cold DM priority'},
+        {cat:'SWE / Engineer',      sn:'SWE-Engineer',       fg:C.navy,   bg:C.navyLt,   sub:'Core peer engineer network'},
+        {cat:'Senior / Staff SWE',  sn:'Senior-Staff-SWE',   fg:'2A5C3F', bg:C.greenLt,  sub:'Senior engineers at top companies'},
+        {cat:'Engineering Manager', sn:'Eng-Manager',        fg:'3A5A2A', bg:'EAF3DE',   sub:'Direct hiring decision makers'},
+        {cat:'Recruiter / HR',      sn:'Recruiter-HR',       fg:C.purple, bg:C.purpleLt, sub:'Direct hiring pipeline'},
+        {cat:'Product Manager',     sn:'Product-Manager',    fg:'7A3B2A', bg:'FFF0EC',   sub:'PMs at target companies'},
+        {cat:'Data Science / ML',   sn:'Data-Science-ML',    fg:C.teal,   bg:C.tealLt,   sub:'ML / AI researchers'},
+        {cat:'Director / VP',       sn:'Director-VP',        fg:C.slate,  bg:C.slateLt,  sub:'Senior leaders'},
+        {cat:'Investor / VC',       sn:'Investor-VC',        fg:C.gold,   bg:C.goldLt,   sub:'Venture & angel investors'},
+        {cat:'Student / Intern',    sn:'Student-Intern',     fg:'7A7060', bg:'F5F5F0',   sub:'Peer student network'},
+        {cat:'Analyst / Consultant',sn:'Analyst-Consult',    fg:'6A6050', bg:'F5F2EE',   sub:'Analyst & consulting roles'},
+        {cat:'FAANG / Big Tech',    sn:'FAANG-Big-Tech',     fg:C.navy,   bg:C.navyLt,   sub:'Referral goldmine'},
+        {cat:'YC Network',          sn:'YC-Network',         fg:'A84832', bg:C.brickLt,  sub:'20 direct YC connections'},
+        {cat:'AI Companies',        sn:'AI-Companies',       fg:C.green,  bg:C.greenLt,  sub:'AI startup contacts'},
+        {cat:'Other',               sn:'Other',              fg:'8A8070', bg:'F5F5F0',   sub:'Remaining connections'},
+      ];
 
-      function S(v,opts={}){
-        const{bg=C.surface,fg=C.ink,bold=false,sz=10,align='left',wrap=false,
-          italic=false,font='Calibri',border=true,numFmt}=opts;
-        const s={
-          font:{bold,sz,color:{rgb:fg},name:font,italic},
-          fill:{fgColor:{rgb:bg}},
-          alignment:{horizontal:align,vertical:'center',wrapText:wrap},
-        };
-        if(border)s.border=borderAll();
-        if(numFmt)s.numFmt=numFmt;
+      /* ── border / style helpers ── */
+      const ba=(c=C.bdr)=>({top:{style:'thin',color:{rgb:c}},bottom:{style:'thin',color:{rgb:c}},left:{style:'thin',color:{rgb:c}},right:{style:'thin',color:{rgb:c}}});
+      const bMed=(c=C.bdr)=>({top:{style:'medium',color:{rgb:c}},bottom:{style:'medium',color:{rgb:c}},left:{style:'medium',color:{rgb:c}},right:{style:'medium',color:{rgb:c}}});
+      const S=(v,o={})=>{
+        const{bg=C.surf,fg=C.ink,bold=false,sz=10,al='left',it=false,wrap=false,brd=true}=o;
+        const s={font:{bold,sz,color:{rgb:fg},name:'Calibri',italic:it},fill:{fgColor:{rgb:bg}},alignment:{horizontal:al,vertical:'center',wrapText:wrap}};
+        if(brd)s.border=ba();
         return{v:v??'',t:typeof v==='number'?'n':'s',s};
-      }
+      };
+      const HDR=(v,bg=C.hMid)=>S(v,{bg,fg:C.wht,bold:true,sz:10,al:'center',wrap:true});
+      const BAR=(n,max,clr)=>{
+        const f=max>0?Math.round((n/max)*20):0;
+        return{v:'█'.repeat(f)+'░'.repeat(20-f)+`  ${n.toLocaleString()}`,t:'s',
+          s:{font:{sz:9,color:{rgb:clr},name:'Courier New',bold:f>=14},fill:{fgColor:{rgb:C.surf}},alignment:{horizontal:'left',vertical:'center'},border:ba()}};
+      };
+      const LINK=(cell,sheetName)=>{
+        cell.hyperlink=new (function(){this.location=`'${sheetName}'!A1`;this.ref=''})();
+        // openpyxl-style won't work in SheetJS — use the correct SheetJS hyperlink format
+      };
 
-      function TITLE(v,bg=C.headerDark){
-        return S(v,{bg,fg:C.white,bold:true,sz:14,align:'center',font:'Calibri',border:false});
-      }
-      function SUBTITLE(v){
-        return S(v,{bg:'0F2D50',fg:'AAAAAA',sz:9,align:'center',italic:true,font:'Calibri',border:false});
-      }
-      function COL_HDR(v,bg=C.headerMid){
-        return S(v,{bg,fg:C.white,bold:true,sz:10,align:'center',wrap:true,font:'Calibri'});
-      }
-      function KPI_NUM(v,fg,bg){
-        return{v,t:'n',s:{font:{bold:true,sz:32,color:{rgb:fg},name:'Calibri'},
-          fill:{fgColor:{rgb:bg}},alignment:{horizontal:'center',vertical:'center'},border:borderAll()}};
-      }
-      function KPI_LBL(v,fg,bg){
-        return S(v,{bg,fg,bold:true,sz:9,align:'center',font:'Calibri'});
-      }
-      function KPI_SUB(v,bg){
-        return S(v,{bg,fg:C.ink4,sz:8,align:'center',italic:true,font:'Calibri'});
-      }
-      function BAR(n,max,clr,label=''){
-        const pct=max>0?n/max:0;
-        const filled=Math.round(pct*20);
-        const bar='█'.repeat(filled)+'░'.repeat(20-filled);
-        return{v:`${bar}  ${n.toLocaleString()}${label?' · '+label:''}`,t:'s',
-          s:{font:{sz:9,color:{rgb:clr},name:'Courier New',bold:pct>0.7},
-            fill:{fgColor:{rgb:C.surface}},
-            alignment:{horizontal:'left',vertical:'center'},border:borderAll()}};
-      }
-      function PIE_LEGEND(label,val,total,clr,bg){
-        const pct=total>0?((val/total)*100).toFixed(1)+'%':'0%';
-        return[
-          S(label,{bg,fg:clr,bold:true,sz:10,align:'left',font:'Calibri'}),
-          {v:val,t:'n',s:{font:{bold:true,sz:10,color:{rgb:clr},name:'Calibri'},fill:{fgColor:{rgb:bg}},alignment:{horizontal:'right',vertical:'center'},border:borderAll()}},
-          S(pct,{bg,fg:C.ink3,sz:9,align:'center',font:'Calibri'}),
-        ];
-      }
-      function EMPTY(bg=C.surface,cols=1){return Array(cols).fill(S('',{bg,border:false}))}
-      function SEC_HDR(v,bg=C.headerMid){
-        return S(v,{bg,fg:C.white,bold:true,sz:11,align:'left',font:'Calibri',border:false});
-      }
-
-      /* ── data prep ── */
-      const CAT_ORDER=['Founder / C-Suite','SWE / Engineer','Senior / Staff SWE','Engineering Manager',
-        'Recruiter / HR','Product Manager','Data Science / ML','Director / VP',
-        'Investor / VC','Student / Intern','Analyst / Consultant','Other'];
-
-      const ALL_PIE=[...CAT_ORDER,'FAANG / Big Tech','YC Network','AI Companies'];
-      const catCounts={};
-      ALL_PIE.forEach(c=>catCounts[c]=(G.cats[c]||[]).length);
-
-      const faang=d.filter(r=>r.isFAANG).length;
-      const yc=d.filter(r=>r.isYC).length;
-      const founders=(G.cats['Founder / C-Suite']||[]).length;
-      const recruiters=(G.cats['Recruiter / HR']||[]).length;
-      const engMgr=(G.cats['Engineering Manager']||[]).length;
-      const ai=d.filter(r=>r.isAI).length;
-
+      /* ── data ── */
       const monthly={};
       d.forEach(r=>{if(!r.con)return;const dt=new Date(r.con);if(isNaN(dt))return;
-        const key=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-        monthly[key]=(monthly[key]||0)+1});
-      const monthKeys=Object.keys(monthly).sort().slice(-12);
-      const maxMonth=Math.max(...monthKeys.map(k=>monthly[k]),1);
-
+        const k=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+        monthly[k]=(monthly[k]||0)+1});
+      const mKeys=Object.keys(monthly).sort().slice(-12);
+      const maxM=Math.max(...mKeys.map(k=>monthly[k]),1);
       const coCnt={};d.forEach(r=>{if(r.co)coCnt[r.co]=(coCnt[r.co]||0)+1});
       const topCos=Object.entries(coCnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
       const maxCo=topCos[0]?.[1]||1;
+      const catCounts={};
+      CAT_META.forEach(m=>catCounts[m.cat]=(G.cats[m.cat]||[]).length);
+      const maxCat=Math.max(...Object.values(catCounts),1);
+      const faang=catCounts['FAANG / Big Tech']||0;
+      const yc=catCounts['YC Network']||0;
+      const founders=catCounts['Founder / C-Suite']||0;
+      const engMgr=catCounts['Engineering Manager']||0;
+      const recruiters=catCounts['Recruiter / HR']||0;
+      const ai=catCounts['AI Companies']||0;
 
-      const maxCat=Math.max(...ALL_PIE.map(c=>catCounts[c]||0),1);
+      /* ══════════════════════════════
+         DASHBOARD SHEET
+      ══════════════════════════════ */
+      const DR=[];
+      const NCOLS=8; // A–H
 
-      // colour palette for categories
-      const CAT_PALETTE=[
-        C.brick,'A84832',C.gold,'C4960E',C.green,'3A7A52',
-        C.navy,'2C5A8E',C.purple,'8B5A9A',C.teal,'3A6E5A','8B7A60'
-      ];
+      const emp=(bg=C.bg,n=1)=>Array(n).fill(S('',{bg,brd:false}));
 
-      /* ══════════════════════════════════
-         SHEET 1: DASHBOARD
-      ══════════════════════════════════ */
-      const DR=[];// dashboard rows
+      // ── Title banner ──
+      DR.push([S('NETLENS  —  LINKEDIN NETWORK ANALYTICS DASHBOARD',{bg:C.hDark,fg:C.wht,bold:true,sz:16,al:'center',brd:false}),...emp(C.hDark,NCOLS-1)]);
+      DR.push([S(`${total.toLocaleString()} connections  ·  ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}  ·  100% private — data never left your browser`,{bg:'0F2D50',fg:'AAAAAA',sz:9,al:'center',it:true,brd:false}),...emp('0F2D50',NCOLS-1)]);
+      DR.push(emp(C.bg,NCOLS));
 
-      // Banner
-      DR.push([TITLE(`NETLENS — LINKEDIN NETWORK ANALYTICS`),...EMPTY(C.headerDark,7)]);
-      DR.push([SUBTITLE(`${total.toLocaleString()} connections  ·  Generated ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}  ·  Your data never left your browser`),...EMPTY('0F2D50',7)]);
-      DR.push(EMPTY(C.bg,8));
+      // ── Section: CLICK TO EXPLORE ──
+      DR.push([S('  CLICK ANY CATEGORY TILE BELOW TO JUMP TO THAT SHEET  →',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
+      DR.push(emp(C.bg,NCOLS));
 
-      // KPI row header
-      DR.push([SEC_HDR('  📊  NETWORK AT A GLANCE'),...EMPTY(C.headerMid,7)]);
+      // ── Tiles row 1: 4 tiles ──
+      // Each tile = 2 cols wide, spans 3 rows: [label] [count] [sub]
+      // We lay them as merged cells in 3 consecutive rows per tile-group
+      const TILE_ROWS=4; // rows per tile block (label + count + sub + gap)
+      const TILE_COLS=[['A','B'],['C','D'],['E','F'],['G','H']]; // 4 tiles per row, 2 cols each
 
-      // KPI labels
-      DR.push([
-        KPI_LBL('Total Connections',C.brick,C.brickLt),
-        KPI_LBL('Founders & C-Suite',C.brick,C.brickLt),
-        KPI_LBL('FAANG Contacts',C.navy,C.navyLt),
-        KPI_LBL('YC Founders','A84832',C.brickLt),
-        KPI_LBL('AI Companies',C.green,C.greenLt),
-        KPI_LBL('Eng Managers',C.teal,C.tealLt),
-        KPI_LBL('Recruiters',C.purple,C.purpleLt),
-        KPI_LBL('Other',C.slate,C.slateLt),
-      ]);
-      // KPI numbers
-      DR.push([
-        KPI_NUM(total,C.brick,C.brickPale),
-        KPI_NUM(founders,C.brick,C.brickLt),
-        KPI_NUM(faang,C.navy,C.navyLt),
-        KPI_NUM(yc,'A84832',C.brickLt),
-        KPI_NUM(ai,C.green,C.greenLt),
-        KPI_NUM(engMgr,C.teal,C.tealLt),
-        KPI_NUM(recruiters,C.purple,C.purpleLt),
-        KPI_NUM((G.cats['Other']||[]).length,C.slate,C.slateLt),
-      ]);
-      // KPI subtitles
-      DR.push([
-        KPI_SUB('Total in export',C.brickPale),
-        KPI_SUB(((founders/total)*100).toFixed(1)+'% of network',C.brickLt),
-        KPI_SUB('Referral goldmine',C.navyLt),
-        KPI_SUB('Direct connections',C.brickLt),
-        KPI_SUB('AI startup contacts',C.greenLt),
-        KPI_SUB('Hiring decision makers',C.tealLt),
-        KPI_SUB('Direct hiring pipeline',C.purpleLt),
-        KPI_SUB('General network',C.slateLt),
-      ]);
-
-      DR.push(EMPTY(C.bg,8));
-
-      /* ── PIE CHART LEGEND (visual table acting as pie reference) ── */
-      DR.push([SEC_HDR('  🥧  CATEGORY BREAKDOWN — PIE CHART DATA'),...EMPTY(C.headerMid,7)]);
-      DR.push([
-        COL_HDR('Category'),COL_HDR('Count'),COL_HDR('%'),
-        COL_HDR(''),
-        COL_HDR('Category'),COL_HDR('Count'),COL_HDR('%'),
-        COL_HDR(''),
-      ]);
-
-      // Two columns of pie legend
-      const half=Math.ceil(ALL_PIE.length/2);
-      for(let i=0;i<half;i++){
-        const c1=CAT_ORDER[i], c2=CAT_ORDER[i+half];
-        const cc1=C.catColors[c1]||{fg:C.ink,bg:C.surface};
-        const cc2=c2?(C.catColors[c2]||{fg:C.ink,bg:C.surface}):{fg:C.ink,bg:C.surface};
-        const n1=catCounts[c1]||0, n2=c2?catCounts[c2]||0:null;
-        DR.push([
-          ...PIE_LEGEND(c1,n1,total,cc1.fg,cc1.bg),
-          S('',{bg:C.bg,border:false}),
-          c2?S(c2,{bg:cc2.bg,fg:cc2.fg,bold:true,sz:10,align:'left'}):S('',{bg:C.surface}),
-          c2?{v:n2,t:'n',s:{font:{bold:true,sz:10,color:{rgb:cc2.fg},name:'Calibri'},fill:{fgColor:{rgb:cc2.bg}},alignment:{horizontal:'right',vertical:'center'},border:borderAll()}}:S('',{bg:C.surface}),
-          c2?S(((n2/total)*100).toFixed(1)+'%',{bg:cc2.bg,fg:C.ink3,sz:9,align:'center'}):S('',{bg:C.surface}),
-          S('',{bg:C.bg,border:false}),
-        ]);
+      // Build tiles in groups of 4
+      for(let group=0;group<Math.ceil(CAT_META.length/4);group++){
+        const slice=CAT_META.slice(group*4,(group+1)*4);
+        // Row A: big count number
+        const countRow=slice.map(m=>{
+          const n=catCounts[m.cat]||0;
+          return S(n,{bg:m.bg,fg:m.fg,bold:true,sz:28,al:'center'});
+        });
+        // Pad to 8 cols (4 tiles × 2 cols, but we merge pairs later)
+        DR.push(countRow);
+        // Row B: category name
+        DR.push(slice.map(m=>S(m.cat,{bg:m.bg,fg:m.fg,bold:true,sz:11,al:'center'})));
+        // Row C: sub label
+        DR.push(slice.map(m=>S(m.sub,{bg:m.bg,fg:m.ink3||C.ink3,sz:9,al:'center',it:true})));
+        // Gap row
+        DR.push(emp(C.bg,4));
       }
 
-      DR.push(EMPTY(C.bg,8));
+      DR.push(emp(C.bg,NCOLS));
 
-      /* ── BAR CHART: category distribution ── */
-      DR.push([SEC_HDR('  📊  CATEGORY DISTRIBUTION — BAR CHART'),...EMPTY(C.headerMid,7)]);
-      DR.push([COL_HDR('Category',C.headerMid),COL_HDR('Count',C.headerMid),COL_HDR('Bar Chart (filled = % of largest category)',C.headerMid),...EMPTY(C.headerMid,5)]);
-      ALL_PIE.forEach((cat,i)=>{
-        const n=catCounts[cat]||0;
-        const cc=C.catColors[cat]||{fg:C.ink,bg:C.surface};
-        const pct=total>0?((n/total)*100).toFixed(1)+'%':'0%';
+      // ── KPI Summary ──
+      DR.push([S('  NETWORK AT A GLANCE',{bg:C.hDark,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hDark,NCOLS-1)]);
+      DR.push([
+        S('Total',{bg:C.brickLt,fg:C.brick,bold:true,sz:9,al:'center'}),
+        S('Founders',{bg:C.brickLt,fg:C.brick,bold:true,sz:9,al:'center'}),
+        S('FAANG',{bg:C.navyLt,fg:C.navy,bold:true,sz:9,al:'center'}),
+        S('YC Founders',{bg:C.brickLt,fg:'A84832',bold:true,sz:9,al:'center'}),
+        S('AI Cos',{bg:C.greenLt,fg:C.green,bold:true,sz:9,al:'center'}),
+        S('NITW Alumni',{bg:C.pinkLt||'FDECEA',fg:C.pink||'8B2A5C',bold:true,sz:9,al:'center'}),
+        S('Recruiters',{bg:C.purpleLt,fg:C.purple,bold:true,sz:9,al:'center'}),
+        S('Eng Mgrs',{bg:C.tealLt,fg:C.teal,bold:true,sz:9,al:'center'}),
+      ]);
+      DR.push([
+        {v:total,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.brick},name:'Calibri'},fill:{fgColor:{rgb:C.brickPale}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+        {v:founders,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.brick},name:'Calibri'},fill:{fgColor:{rgb:C.brickLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+        {v:faang,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.navy},name:'Calibri'},fill:{fgColor:{rgb:C.navyLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+        {v:yc,t:'n',s:{font:{bold:true,sz:24,color:{rgb:'A84832'},name:'Calibri'},fill:{fgColor:{rgb:C.brickLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+        {v:ai,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.green},name:'Calibri'},fill:{fgColor:{rgb:C.greenLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+        {v:(G.cats['NITW Alumni']||[]).length,t:'n',s:{font:{bold:true,sz:24,color:{rgb:'8B2A5C'},name:'Calibri'},fill:{fgColor:{rgb:'FDECEA'}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+        {v:recruiters,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.purple},name:'Calibri'},fill:{fgColor:{rgb:C.purpleLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+        {v:engMgr,t:'n',s:{font:{bold:true,sz:24,color:{rgb:C.teal},name:'Calibri'},fill:{fgColor:{rgb:C.tealLt}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+      ]);
+      DR.push(emp(C.bg,NCOLS));
+
+      // ── Category bar chart ──
+      DR.push([S('  CATEGORY DISTRIBUTION',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
+      DR.push([HDR('Category'),HDR('Count'),HDR('% Share'),HDR('Bar Chart (20 blocks = 100% of largest)',C.hMid),...emp(C.hMid,4)]);
+      CAT_META.forEach(m=>{
+        const n=catCounts[m.cat]||0,pct=total>0?((n/total)*100).toFixed(1)+'%':'0%';
         DR.push([
-          S(cat,{bg:cc.bg,fg:cc.fg,bold:true,sz:10,align:'left'}),
-          {v:n,t:'n',s:{font:{bold:true,sz:11,color:{rgb:cc.fg},name:'Calibri'},fill:{fgColor:{rgb:cc.bg}},alignment:{horizontal:'center',vertical:'center'},border:borderAll()}},
-          {...BAR(n,maxCat,cc.fg,pct)},
-          ...EMPTY(C.surface,5),
+          S(m.cat,{bg:m.bg,fg:m.fg,bold:true,sz:10}),
+          {v:n,t:'n',s:{font:{bold:true,sz:11,color:{rgb:m.fg},name:'Calibri'},fill:{fgColor:{rgb:m.bg}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+          S(pct,{bg:m.bg,fg:C.ink3,sz:9,al:'center'}),
+          BAR(n,maxCat,m.fg),
+          ...emp(C.surf,4),
         ]);
       });
+      DR.push(emp(C.bg,NCOLS));
 
-      DR.push(EMPTY(C.bg,8));
-
-      /* ── LINE CHART: monthly growth ── */
-      DR.push([SEC_HDR('  📈  MONTHLY GROWTH — LAST 12 MONTHS'),...EMPTY(C.headerMid,7)]);
-      DR.push([COL_HDR('Month',C.headerMid),COL_HDR('Connections Added',C.headerMid),COL_HDR('Growth Bar',C.headerMid),...EMPTY(C.headerMid,5)]);
-      monthKeys.forEach(k=>{
-        const v=monthly[k];
-        const isPeak=v===maxMonth;
-        const label=new Date(k.split('-')[0],k.split('-')[1]-1).toLocaleDateString('en-GB',{month:'short',year:'numeric'});
-        const clr=isPeak?C.brick:v>maxMonth*0.6?C.gold:C.ink3;
-        const bg=isPeak?C.brickLt:C.surface;
+      // ── Monthly growth ──
+      DR.push([S('  MONTHLY GROWTH — LAST 12 MONTHS',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
+      DR.push([HDR('Month'),HDR('Added'),HDR('Bar'),HDR(''),HDR(''),HDR(''),HDR(''),HDR('')]);
+      mKeys.forEach(k=>{
+        const v=monthly[k],isPeak=v===maxM;
+        const lbl=new Date(k.split('-')[0],k.split('-')[1]-1).toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+        const clr=isPeak?C.brick:v>maxM*0.6?C.gold:C.ink3;
         DR.push([
-          S(label,{bg,fg:C.ink,bold:isPeak,sz:10,align:'left'}),
-          {v,t:'n',s:{font:{bold:isPeak,sz:11,color:{rgb:clr},name:'Calibri'},fill:{fgColor:{rgb:bg}},alignment:{horizontal:'center',vertical:'center'},border:borderAll()}},
-          BAR(v,maxMonth,clr,isPeak?'◀ PEAK':''),
-          ...EMPTY(C.surface,5),
+          S(lbl,{bg:isPeak?C.brickLt:C.surf,fg:C.ink,bold:isPeak,sz:10}),
+          {v,t:'n',s:{font:{bold:isPeak,sz:11,color:{rgb:clr},name:'Calibri'},fill:{fgColor:{rgb:isPeak?C.brickLt:C.surf}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+          BAR(v,maxM,clr),
+          ...emp(C.surf,5),
         ]);
       });
+      DR.push(emp(C.bg,NCOLS));
 
-      DR.push(EMPTY(C.bg,8));
-
-      /* ── TOP COMPANIES ── */
-      DR.push([SEC_HDR('  🏢  TOP COMPANIES IN NETWORK'),...EMPTY(C.headerMid,7)]);
-      DR.push([COL_HDR('Company',C.headerMid),COL_HDR('Count',C.headerMid),COL_HDR('Distribution Bar',C.headerMid),...EMPTY(C.headerMid,5)]);
+      // ── Top companies ──
+      DR.push([S('  TOP COMPANIES IN NETWORK',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
+      DR.push([HDR('Company'),HDR('Count'),HDR('Bar'),HDR(''),HDR(''),HDR(''),HDR(''),HDR('')]);
       const coClrs=[C.brick,'A84832',C.gold,'C4960E',C.green,'3A7A52',C.navy,'2C5A8E',C.purple,'3A6E5A'];
       topCos.forEach(([nm,v],i)=>{
-        const clr=coClrs[i%coClrs.length];
-        const pct=total>0?((v/total)*100).toFixed(1)+'%':'';
+        const clr=coClrs[i%coClrs.length],pct=total>0?((v/total)*100).toFixed(1)+'%':'';
         DR.push([
-          S(nm,{bg:C.surface,fg:C.ink,bold:i<3,sz:10,align:'left'}),
-          {v,t:'n',s:{font:{bold:true,sz:11,color:{rgb:clr},name:'Calibri'},fill:{fgColor:{rgb:C.surface}},alignment:{horizontal:'center',vertical:'center'},border:borderAll()}},
-          BAR(v,maxCo,clr,pct),
-          ...EMPTY(C.surface,5),
+          S(nm,{bg:C.surf,fg:C.ink,bold:i<3,sz:10}),
+          {v,t:'n',s:{font:{bold:true,sz:11,color:{rgb:clr},name:'Calibri'},fill:{fgColor:{rgb:C.surf}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+          BAR(v,maxCo,clr),
+          ...emp(C.surf,5),
         ]);
       });
+      DR.push(emp(C.bg,NCOLS));
 
-      DR.push(EMPTY(C.bg,8));
-
-      /* ── HIGH VALUE SEGMENT COMPARISON ── */
-      DR.push([SEC_HDR('  🎯  HIGH-VALUE CAREER SEGMENTS'),...EMPTY(C.headerMid,7)]);
-      DR.push([COL_HDR('Segment',C.headerMid),COL_HDR('Count',C.headerMid),COL_HDR('% of Network',C.headerMid),COL_HDR('Career Leverage',C.headerMid),COL_HDR('Action',C.headerMid),...EMPTY(C.headerMid,3)]);
-      const segments=[
-        {name:'Founder / C-Suite',  n:founders, leverage:'★★★★★ Highest', action:'Cold DM — reference your work',   fg:C.brick,   bg:C.brickLt},
-        {name:'YC Network',         n:yc,       leverage:'★★★★★ Highest', action:'DM immediately — apply via YC',   fg:'A84832',  bg:C.brickLt},
-        {name:'FAANG / Big Tech',   n:faang,    leverage:'★★★★☆ Very High',action:'Seek referrals for interviews',   fg:C.navy,    bg:C.navyLt},
-        {name:'AI Companies',       n:ai,       leverage:'★★★★☆ Very High',action:'Early-stage equity opportunities',fg:C.green,   bg:C.greenLt},
-        {name:'Engineering Manager',n:engMgr,   leverage:'★★★☆☆ High',    action:'Direct hiring decision makers',   fg:C.teal,    bg:C.tealLt},
-        {name:'Recruiter / HR',     n:recruiters,leverage:'★★★☆☆ High',   action:'Send CV + LinkedIn message',      fg:C.purple,  bg:C.purpleLt},
-      ];
-      segments.forEach(seg=>{
+      // ── High-value segments ──
+      DR.push([S('  HIGH-VALUE CAREER SEGMENTS',{bg:C.hMid,fg:C.wht,bold:true,sz:11,al:'left',brd:false}),...emp(C.hMid,NCOLS-1)]);
+      DR.push([HDR('Segment'),HDR('Count'),HDR('% Network'),HDR('Leverage'),HDR('Action'),HDR(''),HDR(''),HDR('')]);
+      [{name:'Founder / C-Suite',n:founders,lev:'★★★★★',act:'Cold DM — lead with your work',fg:C.brick,bg:C.brickLt},
+       {name:'YC Network',n:yc,lev:'★★★★★',act:'DM immediately — apply via YC',fg:'A84832',bg:C.brickLt},
+       {name:'FAANG / Big Tech',n:faang,lev:'★★★★☆',act:'Seek referrals for FAANG interviews',fg:C.navy,bg:C.navyLt},
+       {name:'AI Companies',n:ai,lev:'★★★★☆',act:'Early-stage equity opportunities',fg:C.green,bg:C.greenLt},
+       {name:'Engineering Manager',n:engMgr,lev:'★★★☆☆',act:'Hiring decision makers — reach out',fg:C.teal,bg:C.tealLt},
+       {name:'Recruiter / HR',n:recruiters,lev:'★★★☆☆',act:'Send CV + LinkedIn note',fg:C.purple,bg:C.purpleLt},
+      ].forEach(seg=>{
         const pct=total>0?((seg.n/total)*100).toFixed(1)+'%':'0%';
         DR.push([
-          S(seg.name,{bg:seg.bg,fg:seg.fg,bold:true,sz:10,align:'left'}),
-          {v:seg.n,t:'n',s:{font:{bold:true,sz:11,color:{rgb:seg.fg},name:'Calibri'},fill:{fgColor:{rgb:seg.bg}},alignment:{horizontal:'center',vertical:'center'},border:borderAll()}},
-          S(pct,{bg:seg.bg,fg:C.ink3,sz:9,align:'center'}),
-          S(seg.leverage,{bg:seg.bg,fg:seg.fg,sz:9,bold:true,align:'left'}),
-          S(seg.action,{bg:seg.bg,fg:C.ink3,sz:9,align:'left'}),
-          ...EMPTY(seg.bg,3),
+          S(seg.name,{bg:seg.bg,fg:seg.fg,bold:true,sz:10}),
+          {v:seg.n,t:'n',s:{font:{bold:true,sz:11,color:{rgb:seg.fg},name:'Calibri'},fill:{fgColor:{rgb:seg.bg}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+          S(pct,{bg:seg.bg,fg:C.ink3,sz:9,al:'center'}),
+          S(seg.lev,{bg:seg.bg,fg:seg.fg,bold:true,sz:9}),
+          S(seg.act,{bg:seg.bg,fg:C.ink3,sz:9}),
+          ...emp(seg.bg,3),
         ]);
       });
 
-      /* ── Build dashboard sheet ── */
-      const wsDash=XLSX.utils.aoa_to_sheet(DR.map(r=>r.map(c=>c&&typeof c==='object'?c.v:c||'')));
-      DR.forEach((row,ri)=>row.forEach((cellDef,ci)=>{
-        if(cellDef&&typeof cellDef==='object'&&cellDef.s){
+      /* ── Build dashboard ws ── */
+      const wsDash=XLSX.utils.aoa_to_sheet(DR.map(r=>r.map(c=>c&&typeof c==='object'?c.v??'':c??'')));
+      DR.forEach((row,ri)=>row.forEach((cd,ci)=>{
+        if(cd&&typeof cd==='object'&&cd.s){
           const addr=XLSX.utils.encode_cell({r:ri,c:ci});
           if(!wsDash[addr])wsDash[addr]={};
-          wsDash[addr].v=cellDef.v;wsDash[addr].t=cellDef.t||'s';wsDash[addr].s=cellDef.s;
+          wsDash[addr].v=cd.v??'';wsDash[addr].t=cd.t||'s';wsDash[addr].s=cd.s;
         }
       }));
-      // Merges
-      wsDash['!merges']=[
-        {s:{r:0,c:0},e:{r:0,c:7}},{s:{r:1,c:0},e:{r:1,c:7}},
-        {s:{r:3,c:0},e:{r:3,c:7}},
+
+      // ── Hyperlinks on tile count cells (row index calculation) ──
+      // Tiles start at DR row 5 (0-indexed: row 4 after 4 header rows + gap)
+      // group 0 tiles: rows 4,5,6 (count,name,sub); group 1: rows 8,9,10; etc.
+      const TILE_START=4;
+      for(let g=0;g<Math.ceil(CAT_META.length/4);g++){
+        const countRowIdx=TILE_START+g*TILE_ROWS;
+        CAT_META.slice(g*4,(g+1)*4).forEach((m,ti)=>{
+          const addr=XLSX.utils.encode_cell({r:countRowIdx,c:ti});
+          if(!wsDash[addr])wsDash[addr]={v:catCounts[m.cat]||0,t:'n'};
+          wsDash[addr].l={Target:`#'${m.sn}'!A1`,Tooltip:`Go to ${m.cat}`};
+        });
+        // Also link the name row
+        const nameRowIdx=TILE_START+g*TILE_ROWS+1;
+        CAT_META.slice(g*4,(g+1)*4).forEach((m,ti)=>{
+          const addr=XLSX.utils.encode_cell({r:nameRowIdx,c:ti});
+          if(!wsDash[addr])wsDash[addr]={v:m.cat,t:'s'};
+          wsDash[addr].l={Target:`#'${m.sn}'!A1`,Tooltip:`Click to view ${m.cat}`};
+          if(!wsDash[addr].s&&DR[nameRowIdx]&&DR[nameRowIdx][ti]&&DR[nameRowIdx][ti].s)
+            wsDash[addr].s=DR[nameRowIdx][ti].s;
+        });
+      }
+
+      // ── Merges: title rows + tile cells (each tile spans 1 col for now, layout is 4 wide into 8 cols = 2 cols each) ──
+      const merges=[
+        {s:{r:0,c:0},e:{r:0,c:NCOLS-1}}, // title
+        {s:{r:1,c:0},e:{r:1,c:NCOLS-1}}, // subtitle
+        {s:{r:3,c:0},e:{r:3,c:NCOLS-1}}, // click instruction
       ];
+      // Merge each tile 2-col wide across 3 rows (count, name, sub)
+      for(let g=0;g<Math.ceil(CAT_META.length/4);g++){
+        const base=TILE_START+g*TILE_ROWS;
+        for(let t=0;t<Math.min(4,CAT_META.length-g*4);t++){
+          const c=t;
+          merges.push({s:{r:base,c},e:{r:base,c}});   // count cell - no merge needed (already 1 col)
+          merges.push({s:{r:base+1,c},e:{r:base+1,c}}); // name
+          merges.push({s:{r:base+2,c},e:{r:base+2,c}}); // sub
+        }
+        // merge the KPI section header
+      }
+      // Merge KPI and section headers
+      const kpiBase=TILE_START+Math.ceil(CAT_META.length/4)*TILE_ROWS+1;
+      merges.push({s:{r:kpiBase,c:0},e:{r:kpiBase,c:NCOLS-1}});
+
+      wsDash['!merges']=merges;
+
       // Row heights
-      const dRH=DR.map(()=>({hpt:20}));
-      dRH[0]={hpt:40};dRH[1]={hpt:20};dRH[3]={hpt:26};
-      dRH[5]={hpt:26};dRH[6]={hpt:36};dRH[7]={hpt:18};
-      wsDash['!rows']=dRH;
-      wsDash['!cols']=[{wch:26},{wch:10},{wch:36},{wch:4},{wch:26},{wch:10},{wch:10},{wch:4}];
+      const rh=DR.map(()=>({hpt:20}));
+      rh[0]={hpt:38};rh[1]={hpt:18};rh[3]={hpt:24};
+      // Tile rows get taller
+      for(let g=0;g<Math.ceil(CAT_META.length/4);g++){
+        const base=TILE_START+g*TILE_ROWS;
+        rh[base]={hpt:42};    // count
+        rh[base+1]={hpt:22};  // name
+        rh[base+2]={hpt:18};  // sub
+        rh[base+3]={hpt:8};   // gap
+      }
+      wsDash['!rows']=rh;
+      wsDash['!cols']=[{wch:22},{wch:22},{wch:22},{wch:22},{wch:22},{wch:22},{wch:22},{wch:22}];
       XLSX.utils.book_append_sheet(wb,wsDash,'📊 Dashboard');
 
-      /* ══════════════════════════════════
+      /* ══════════════════════════════
          CATEGORY SHEETS
-      ══════════════════════════════════ */
-      CAT_ORDER.concat(['FAANG / Big Tech','YC Network','AI Companies']).forEach(cat=>{
-        const rows=(G.cats[cat]||[]).slice();
+      ══════════════════════════════ */
+      CAT_META.forEach(m=>{
+        const rows=(G.cats[m.cat]||[]).slice();
         if(!rows.length)return;
-        const sn=cat.replace(/[\/\\*\[\]:?]/g,'').trim().slice(0,28);
-        const cc=C.catColors[cat]||{fg:C.ink,bg:C.surface};
 
         const aoa=[];
-
-        // Title banner
+        // Title
         aoa.push([
-          {v:`${cat.toUpperCase()}`,t:'s',s:{font:{bold:true,sz:14,color:{rgb:C.white},name:'Calibri'},
-            fill:{fgColor:{rgb:C.headerDark}},alignment:{horizontal:'left',vertical:'center'},border:borderBottom(C.border,'medium')}},
-          {v:`${rows.length.toLocaleString()} connections`,t:'s',s:{font:{bold:false,sz:11,color:{rgb:'AAAAAA'},name:'Calibri',italic:true},
-            fill:{fgColor:{rgb:C.headerDark}},alignment:{horizontal:'right',vertical:'center'}}},
-          ...EMPTY(C.headerDark,4)
+          S(`${m.cat.toUpperCase()}`,{bg:C.hDark,fg:C.wht,bold:true,sz:14,brd:false}),
+          S(`${rows.length.toLocaleString()} connections`,{bg:C.hDark,fg:'AAAAAA',sz:10,al:'right',it:true,brd:false}),
+          ...Array(5).fill(S('',{bg:C.hDark,brd:false}))
         ]);
-
-        // Sub-banner: category colour strip
+        // Back link row
         aoa.push([
-          {v:`← Back to Dashboard sheet for charts & full overview`,t:'s',s:{font:{sz:9,color:{rgb:cc.fg},name:'Calibri',italic:true,bold:false},
-            fill:{fgColor:{rgb:cc.bg}},alignment:{horizontal:'left',vertical:'center'}}},
-          ...EMPTY(cc.bg,5)
+          S('← Click here to go back to Dashboard',{bg:m.bg,fg:m.fg,sz:9,it:true,brd:false}),
+          ...Array(6).fill(S('',{bg:m.bg,brd:false}))
         ]);
-
-        // Column headers — bold, dark bg
-        aoa.push([
-          COL_HDR('#',C.headerMid),
-          COL_HDR('First Name',C.headerMid),
-          COL_HDR('Last Name',C.headerMid),
-          COL_HDR('Company',C.headerMid),
-          COL_HDR('Position / Title',C.headerMid),
-          COL_HDR('Connected On',C.headerMid),
-          COL_HDR('Tags',C.headerMid),
-        ]);
-
-        // Data rows
+        // Col headers
+        aoa.push(['#','First Name','Last Name','Company','Position / Title','Connected On','Tags'].map(h=>HDR(h)));
+        // Data
         rows.forEach((r,i)=>{
-          const rowBg=i%2===0?C.surface:C.surface2;
+          const rb=i%2===0?C.surf:C.surf2;
           const tags=[r.isYC?'YC':'',r.isFAANG?'FAANG':'',r.isAI?'AI':''].filter(Boolean).join(' · ');
           const tagFg=r.isYC?C.gold:r.isFAANG?C.navy:r.isAI?C.green:C.ink3;
-          const tagBg=r.isYC?C.goldLt:r.isFAANG?C.navyLt:r.isAI?C.greenLt:rowBg;
+          const tagBg=r.isYC?C.goldLt:r.isFAANG?C.navyLt:r.isAI?C.greenLt:rb;
           aoa.push([
-            {v:i+1,t:'n',s:{font:{sz:9,color:{rgb:C.ink4},name:'Calibri'},fill:{fgColor:{rgb:rowBg}},alignment:{horizontal:'center',vertical:'center'},border:borderAll()}},
-            S(r.fn,{bg:rowBg,fg:C.ink,bold:false,sz:10,align:'left'}),
-            S(r.ln,{bg:rowBg,fg:C.ink,bold:false,sz:10,align:'left'}),
-            S(r.co,{bg:rowBg,fg:cc.fg,bold:i<10,sz:10,align:'left'}),
-            S(r.pos,{bg:rowBg,fg:C.ink3,sz:9,align:'left'}),
-            S(r.con||'—',{bg:rowBg,fg:C.ink4,sz:9,align:'center'}),
-            tags?S(tags,{bg:tagBg,fg:tagFg,bold:true,sz:9,align:'center'}):S('',{bg:rowBg}),
+            {v:i+1,t:'n',s:{font:{sz:9,color:{rgb:C.ink4},name:'Calibri'},fill:{fgColor:{rgb:rb}},alignment:{horizontal:'center',vertical:'center'},border:ba()}},
+            S(r.fn,{bg:rb,sz:10}),S(r.ln,{bg:rb,sz:10}),
+            S(r.co,{bg:rb,fg:m.fg,bold:i<5,sz:10}),
+            S(r.pos,{bg:rb,fg:C.ink3,sz:9}),
+            S(r.con||'—',{bg:rb,fg:C.ink4,sz:9,al:'center'}),
+            tags?S(tags,{bg:tagBg,fg:tagFg,bold:true,sz:9,al:'center'}):S('',{bg:rb}),
           ]);
         });
 
-        const ws=XLSX.utils.aoa_to_sheet(aoa.map(r=>r.map(c=>c&&typeof c==='object'?c.v:c||'')));
-        aoa.forEach((row,ri)=>row.forEach((cellDef,ci)=>{
-          if(cellDef&&typeof cellDef==='object'&&cellDef.s){
+        const ws=XLSX.utils.aoa_to_sheet(aoa.map(r=>r.map(c=>c&&typeof c==='object'?c.v??'':c??'')));
+        aoa.forEach((row,ri)=>row.forEach((cd,ci)=>{
+          if(cd&&typeof cd==='object'&&cd.s){
             const addr=XLSX.utils.encode_cell({r:ri,c:ci});
             if(!ws[addr])ws[addr]={};
-            ws[addr].v=cellDef.v;ws[addr].t=cellDef.t||'s';ws[addr].s=cellDef.s;
+            ws[addr].v=cd.v??'';ws[addr].t=cd.t||'s';ws[addr].s=cd.s;
           }
         }));
-        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}}];
-        ws['!cols']=[{wch:5},{wch:13},{wch:15},{wch:28},{wch:34},{wch:14},{wch:16}];
-        const catRH=[{hpt:32},{hpt:18},{hpt:22},...rows.map(()=>({hpt:20}))];
-        ws['!rows']=catRH;
-        XLSX.utils.book_append_sheet(wb,ws,sn);
+
+        // Back link hyperlink
+        ws['A2']={v:'← Click here to go back to Dashboard',t:'s',
+          s:{font:{sz:9,color:{rgb:m.fg},name:'Calibri',italic:true},fill:{fgColor:{rgb:m.bg}},alignment:{horizontal:'left',vertical:'center'}},
+          l:{Target:"#'📊 Dashboard'!A1",Tooltip:'Back to Dashboard'}};
+
+        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}}];
+        ws['!cols']=[{wch:5},{wch:14},{wch:15},{wch:28},{wch:34},{wch:14},{wch:16}];
+        ws['!rows']=[{hpt:34},{hpt:18},{hpt:22},...rows.map(()=>({hpt:20}))];
+        XLSX.utils.book_append_sheet(wb,ws,m.sn);
       });
 
       XLSX.writeFile(wb,'NetLens_Analytics.xlsx');
