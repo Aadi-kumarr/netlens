@@ -910,11 +910,11 @@ function downloadExcel(){
       /* ── data prep ── */
       const CAT_ORDER=['Founder / C-Suite','SWE / Engineer','Senior / Staff SWE','Engineering Manager',
         'Recruiter / HR','Product Manager','Data Science / ML','Director / VP',
-        'Investor / VC','Student / Intern','Analyst / Consultant','Other',
-        'FAANG / Big Tech','YC Network','AI Companies'];
+        'Investor / VC','Student / Intern','Analyst / Consultant','Other'];
 
+      const ALL_PIE=[...CAT_ORDER,'FAANG / Big Tech','YC Network','AI Companies'];
       const catCounts={};
-      CAT_ORDER.forEach(c=>catCounts[c]=(G.cats[c]||[]).length);
+      ALL_PIE.forEach(c=>catCounts[c]=(G.cats[c]||[]).length);
 
       const faang=d.filter(r=>r.isFAANG).length;
       const yc=d.filter(r=>r.isYC).length;
@@ -934,7 +934,7 @@ function downloadExcel(){
       const topCos=Object.entries(coCnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
       const maxCo=topCos[0]?.[1]||1;
 
-      const maxCat=Math.max(...CAT_ORDER.map(c=>catCounts[c]||0),1);
+      const maxCat=Math.max(...ALL_PIE.map(c=>catCounts[c]||0),1);
 
       // colour palette for categories
       const CAT_PALETTE=[
@@ -1001,7 +1001,7 @@ function downloadExcel(){
       ]);
 
       // Two columns of pie legend
-      const half=Math.ceil(CAT_ORDER.length/2);
+      const half=Math.ceil(ALL_PIE.length/2);
       for(let i=0;i<half;i++){
         const c1=CAT_ORDER[i], c2=CAT_ORDER[i+half];
         const cc1=C.catColors[c1]||{fg:C.ink,bg:C.surface};
@@ -1022,7 +1022,7 @@ function downloadExcel(){
       /* ── BAR CHART: category distribution ── */
       DR.push([SEC_HDR('  📊  CATEGORY DISTRIBUTION — BAR CHART'),...EMPTY(C.headerMid,7)]);
       DR.push([COL_HDR('Category',C.headerMid),COL_HDR('Count',C.headerMid),COL_HDR('Bar Chart (filled = % of largest category)',C.headerMid),...EMPTY(C.headerMid,5)]);
-      CAT_ORDER.forEach((cat,i)=>{
+      ALL_PIE.forEach((cat,i)=>{
         const n=catCounts[cat]||0;
         const cc=C.catColors[cat]||{fg:C.ink,bg:C.surface};
         const pct=total>0?((n/total)*100).toFixed(1)+'%':'0%';
