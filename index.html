@@ -1037,484 +1037,499 @@ function renderTable(){
    dashboard sheet with charts as data viz
 ═══════════════════════════════════════ */
 
-function downloadExcel(){
+/* ═══════════════════════════════════════
+   EXCELJS DOWNLOAD — full styled Excel
+═══════════════════════════════════════ */
+async function downloadExcel(){
   const btn=document.querySelector('.btn-dl');
-  btn.textContent='⏳ Generating…';btn.disabled=true;
-  setTimeout(()=>{
-    try{
-      const wb=XLSX.utils.book_new();
-      wb.Props={Title:"NetLens Analytics",Author:"NetLens"};
-      const d=G.all,total=d.length;
+  btn.textContent='⏳ Building Excel…'; btn.disabled=true;
 
-      /* ───────────────────────────────────────────
-         COLOUR SYSTEM
-      ─────────────────────────────────────────── */
-      const CLR={
-        // backgrounds
-        inkDark:'1A140E', ink:'2C1F14',
-        headerBg:'2D1B0E', subBg:'3D2A1A',
-        cream:'FAF7F2', warm:'F2EDE4', warm2:'E8E0D4',
-        // accents
-        rust:'C4522A', rustLt:'FAEEE8', rustPale:'FDF6F3',
-        amber:'C4860A', amberLt:'FBF0D8',
-        forest:'2D5A3D', forestLt:'E4F0E8',
-        navy:'1C3A5E', navyLt:'E6EEF7',
-        plum:'5C2D6E', plumLt:'F2EAF7',
-        teal:'2A5A4E', tealLt:'E0F4EE',
-        slate:'4A3A2A', slateLt:'F5F0EB',
-        // text
-        white:'FFFFFF', offwhite:'FFF8F0',
-        muted:'B0A090', light:'D9CFBF',
-        border:'D9D0C4',
-        // category map
-        cats:{
-          'Founder / C-Suite':     {bg:'FAEEE8',fg:'C4522A',accent:'C4522A'},
-          'SWE / Engineer':        {bg:'E6EEF7',fg:'1C3A5E',accent:'1C3A5E'},
-          'Senior / Staff SWE':    {bg:'E4F0E8',fg:'2D5A3D',accent:'2D5A3D'},
-          'Engineering Manager':   {bg:'E8F4EC',fg:'1F4A2E',accent:'1F4A2E'},
-          'Recruiter / HR':        {bg:'F2EAF7',fg:'5C2D6E',accent:'5C2D6E'},
-          'Product Manager':       {bg:'FFF0EC',fg:'8B3A1A',accent:'8B3A1A'},
-          'Data Science / ML':     {bg:'E0F4EE',fg:'2A5A4E',accent:'2A5A4E'},
-          'Director / VP':         {bg:'F5F0EB',fg:'4A3A2A',accent:'4A3A2A'},
-          'Investor / VC':         {bg:'FBF0D8',fg:'C4860A',accent:'C4860A'},
-          'Student / Intern':      {bg:'F5F5F0',fg:'6A6050',accent:'7A7060'},
-          'Analyst / Consultant':  {bg:'F5F2EE',fg:'5A5040',accent:'6A6050'},
-          'FAANG / Big Tech':      {bg:'E5EDFA',fg:'1A3A6E',accent:'1A3A6E'},
-          'YC Network':            {bg:'FDECEA',fg:'A84320',accent:'A84320'},
-          'AI Companies':          {bg:'E0F4EE',fg:'2D6A4A',accent:'2D6A4A'},
-          'Other':                 {bg:'F5F5F0',fg:'8A8070',accent:'8A8070'},
-        }
-      };
-
-      /* ───────────────────────────────────────────
-         STYLE FACTORY
-      ─────────────────────────────────────────── */
-      const bd=(c=CLR.border,s='thin')=>({top:{style:s,color:{rgb:c}},bottom:{style:s,color:{rgb:c}},left:{style:s,color:{rgb:c}},right:{style:s,color:{rgb:c}}});
-      const bdB=(c=CLR.border,s='medium')=>({bottom:{style:s,color:{rgb:c}}});
-
-      // Core cell builder — returns full SheetJS cell object with style
-      function C(val,opts={}){
-        const{
-          bg=CLR.cream,fg=CLR.ink,bold=false,sz=10,
-          al='left',valign='center',it=false,wrap=false,
-          font='Calibri',brd=true,brdColor=CLR.border,brdStyle='thin',
-          numFmt,underline=false
-        }=opts;
-        const cell={
-          v:val??'',
-          t:typeof val==='number'?'n':'s',
-          s:{
-            font:{name:font,bold,sz,color:{rgb:fg},italic:it,underline},
-            fill:{patternType:'solid',fgColor:{rgb:bg}},
-            alignment:{horizontal:al,vertical:valign,wrapText:wrap},
-            border:brd?bd(brdColor,brdStyle):{},
-          }
-        };
-        if(numFmt)cell.s.numFmt=numFmt;
-        return cell;
-      }
-
-      // Shortcuts
-      const BLANK=(bg=CLR.cream)=>C('',{bg,brd:false});
-      const HDRROW=(v,bg=CLR.headerBg)=>C(v,{bg,fg:CLR.white,bold:true,sz:11,al:'center',wrap:true,brdColor:bg});
-      const SECHDR=(v,bg=CLR.headerBg)=>C(v,{bg,fg:CLR.white,bold:true,sz:12,al:'left',brdColor:bg});
-      const NUM=(n,fg=CLR.ink,bg=CLR.cream,sz=10)=>({v:n,t:'n',s:{font:{name:'Calibri',bold:true,sz,color:{rgb:fg}},fill:{patternType:'solid',fgColor:{rgb:bg}},alignment:{horizontal:'center',vertical:'center'},border:bd()}});
-      const BAR=(n,max,fg,bg=CLR.cream)=>{
-        const f=max>0?Math.round((n/max)*24):0;
-        const bar='▓'.repeat(f)+'░'.repeat(24-f);
-        return C(`${bar}  ${n.toLocaleString()}`,{bg,fg,sz:8,font:'Courier New',brdColor:CLR.border});
-      };
-
-      /* ───────────────────────────────────────────
-         DATA PREP
-      ─────────────────────────────────────────── */
-      const CAT_META=[
-        {cat:'Founder / C-Suite',   sn:'Founder-C-Suite'},
-        {cat:'SWE / Engineer',      sn:'SWE-Engineer'},
-        {cat:'Senior / Staff SWE',  sn:'Senior-Staff-SWE'},
-        {cat:'Engineering Manager', sn:'Eng-Manager'},
-        {cat:'Recruiter / HR',      sn:'Recruiter-HR'},
-        {cat:'Product Manager',     sn:'Product-Manager'},
-        {cat:'Data Science / ML',   sn:'Data-Science-ML'},
-        {cat:'Director / VP',       sn:'Director-VP'},
-        {cat:'Investor / VC',       sn:'Investor-VC'},
-        {cat:'Student / Intern',    sn:'Student-Intern'},
-        {cat:'Analyst / Consultant',sn:'Analyst-Consult'},
-        {cat:'FAANG / Big Tech',    sn:'FAANG-Big-Tech'},
-        {cat:'YC Network',          sn:'YC-Network'},
-        {cat:'AI Companies',        sn:'AI-Companies'},
-        {cat:'Other',               sn:'Other'},
-      ];
-
-      const catCounts={};
-      CAT_META.forEach(m=>catCounts[m.cat]=(G.cats[m.cat]||[]).length);
-
-      const faang=catCounts['FAANG / Big Tech']||0;
-      const yc=catCounts['YC Network']||0;
-      const founders=catCounts['Founder / C-Suite']||0;
-      const engMgr=catCounts['Engineering Manager']||0;
-      const recruiters=catCounts['Recruiter / HR']||0;
-      const ai=catCounts['AI Companies']||0;
-      const maxCat=Math.max(...Object.values(catCounts),1);
-
-      const monthly={};
-      d.forEach(r=>{if(!r.con)return;const dt=new Date(r.con);if(isNaN(dt))return;
-        const k=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-        monthly[k]=(monthly[k]||0)+1});
-      const mKeys=Object.keys(monthly).sort().slice(-12);
-      const maxM=Math.max(...mKeys.map(k=>monthly[k]),1);
-
-      const coCnt={};d.forEach(r=>{if(r.co)coCnt[r.co]=(coCnt[r.co]||0)+1});
-      const topCos=Object.entries(coCnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
-      const maxCo=topCos[0]?.[1]||1;
-
-      /* ═══════════════════════════════════════════
-         SHEET BUILDER HELPER
-         Converts a 2D array of cell objects into a
-         SheetJS worksheet with styles applied.
-      ═══════════════════════════════════════════ */
-      function buildSheet(rows,colWidths,rowHeights){
-        // First create from plain values
-        const vals=rows.map(r=>r.map(c=>{
-          if(c===null||c===undefined)return'';
-          if(typeof c==='object'&&'v'in c)return c.v??'';
-          return c;
-        }));
-        const ws=XLSX.utils.aoa_to_sheet(vals);
-        // Apply styles cell by cell
-        rows.forEach((row,ri)=>row.forEach((cell,ci)=>{
-          if(cell&&typeof cell==='object'&&cell.s){
-            const addr=XLSX.utils.encode_cell({r:ri,c:ci});
-            if(!ws[addr])ws[addr]={v:cell.v??'',t:cell.t||'s'};
-            ws[addr].s=cell.s;
-            if(cell.t)ws[addr].t=cell.t;
-            if(cell.v!==undefined)ws[addr].v=cell.v;
-            if(cell.l)ws[addr].l=cell.l; // hyperlinks
-          }
-        }));
-        if(colWidths)ws['!cols']=colWidths.map(w=>({wch:w}));
-        if(rowHeights)ws['!rows']=rowHeights;
-        return ws;
-      }
-
-      /* ═══════════════════════════════════════════
-         DASHBOARD SHEET
-      ═══════════════════════════════════════════ */
-      const DR=[];
-      const N=8; // 8 columns A–H
-      const E=(bg=CLR.cream,n=N)=>Array(n).fill(BLANK(bg));
-
-      // ── Row 0: Main title ──
-      DR.push([C('NetLens  —  LinkedIn Network Analytics Dashboard',{bg:CLR.headerBg,fg:CLR.offwhite,bold:true,sz:16,al:'center',brd:false}),...Array(N-1).fill(BLANK(CLR.headerBg))]);
-
-      // ── Row 1: subtitle ──
-      DR.push([C(`${total.toLocaleString()} connections  ·  ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}  ·  All data processed locally — never left your browser`,{bg:CLR.subBg,fg:'C8B8A8',sz:9,al:'center',it:true,brd:false}),...Array(N-1).fill(BLANK(CLR.subBg))]);
-
-      // ── Row 2: spacer ──
-      DR.push(E(CLR.warm2));
-
-      // ── Row 3: instruction banner ──
-      DR.push([C('  🖱  CLICK ANY COLOURED TILE BELOW  →  JUMPS DIRECTLY TO THAT CATEGORY SHEET',{bg:'3D2A1A',fg:'E8D0B8',bold:true,sz:10,al:'left',brd:false}),...Array(N-1).fill(BLANK('3D2A1A'))]);
-
-      DR.push(E(CLR.warm2)); // spacer row 4
-
-      /* ── TILE ROWS: 4 tiles per row, 4 rows per tile group ──
-         Row A = big number (hyperlinked)
-         Row B = category name (hyperlinked)
-         Row C = subtitle text
-         Row D = thin colour bar + gap
-      */
-      const TILE_H=[50,22,18,8]; // row heights per tile row
-      const TILE_START_ROW=5;
-
-      for(let g=0;g<Math.ceil(CAT_META.length/4);g++){
-        const slice=CAT_META.slice(g*4,(g+1)*4);
-        // Pad to exactly 4
-        while(slice.length<4)slice.push(null);
-
-        // Count row
-        DR.push(slice.map(m=>{
-          if(!m)return BLANK(CLR.warm);
-          const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
-          const n=catCounts[m.cat]||0;
-          const cell=NUM(n,cc.fg,cc.bg,30);
-          // Add hyperlink
-          cell.l={Target:`#'${m.sn}'!A1`,Tooltip:`View ${m.cat} connections`};
-          return cell;
-        }));
-
-        // Name row
-        DR.push(slice.map(m=>{
-          if(!m)return BLANK(CLR.warm);
-          const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
-          const cell=C(m.cat,{bg:cc.bg,fg:cc.fg,bold:true,sz:11,al:'center',brdColor:cc.bg});
-          cell.l={Target:`#'${m.sn}'!A1`,Tooltip:`View all ${m.cat}`};
-          return cell;
-        }));
-
-        // Subtitle row
-        DR.push(slice.map(m=>{
-          if(!m)return BLANK(CLR.warm);
-          const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
-          const subs={'Founder / C-Suite':'Highest leverage · DM first','SWE / Engineer':'Core peer network',
-            'Senior / Staff SWE':'Top-tier engineers','Engineering Manager':'Hiring decision makers',
-            'Recruiter / HR':'Direct hiring pipeline','Product Manager':'PMs at target companies',
-            'Data Science / ML':'ML & AI researchers','Director / VP':'Senior leaders',
-            'Investor / VC':'Venture & angel investors','Student / Intern':'Peer student network',
-            'Analyst / Consultant':'Analyst & consulting','FAANG / Big Tech':'Referral goldmine ★',
-            'YC Network':'YC direct connections ★★','AI Companies':'AI startup contacts',
-            'Other':'Remaining connections'};
-          return C(subs[m.cat]||'',{bg:cc.bg,fg:cc.fg+'AA'||CLR.muted,sz:8,al:'center',it:true,brdColor:cc.bg});
-        }));
-
-        // Thin accent bar + gap row
-        DR.push(slice.map(m=>{
-          if(!m)return BLANK(CLR.warm);
-          const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
-          return BLANK(cc.bg);
-        }));
-      }
-
-      // Spacer
-      DR.push(E(CLR.warm2));
-
-      /* ── KPI SUMMARY ROW ── */
-      DR.push([C('  NETWORK AT A GLANCE',{bg:CLR.headerBg,fg:CLR.white,bold:true,sz:11,al:'left',brd:false}),...Array(N-1).fill(BLANK(CLR.headerBg))]);
-
-      const kpiLabels=[
-        {l:'Total',v:total,fg:CLR.rust,bg:CLR.rustLt},
-        {l:'Founders',v:founders,fg:CLR.rust,bg:CLR.rustPale},
-        {l:'FAANG',v:faang,fg:CLR.navy,bg:CLR.navyLt},
-        {l:'YC Founders',v:yc,fg:'A84320',bg:'FDECEA'},
-        {l:'AI Companies',v:ai,fg:CLR.forest,bg:CLR.forestLt},
-        {l:'Eng Managers',v:engMgr,fg:CLR.teal,bg:CLR.tealLt},
-        {l:'Recruiters',v:recruiters,fg:CLR.plum,bg:CLR.plumLt},
-        {l:'Other',v:(catCounts['Other']||0),fg:CLR.slate,bg:CLR.slateLt},
-      ];
-      DR.push(kpiLabels.map(k=>C(k.l,{bg:k.bg,fg:k.fg,bold:true,sz:9,al:'center',brdColor:k.fg+'33'})));
-      DR.push(kpiLabels.map(k=>NUM(k.v,k.fg,k.bg,26)));
-      DR.push(kpiLabels.map(k=>C(total>0?((k.v/total)*100).toFixed(1)+'%':'—',{bg:k.bg,fg:'888888',sz:8,al:'center',it:true,brdColor:k.fg+'33'})));
-
-      DR.push(E(CLR.warm2)); // spacer
-
-      /* ── CATEGORY DISTRIBUTION BAR CHART ── */
-      DR.push([SECHDR('  📊  CATEGORY DISTRIBUTION'),...Array(N-1).fill(BLANK(CLR.headerBg))]);
-      DR.push([HDRROW('Category'),HDRROW('Count'),HDRROW('%'),C('Bar Chart — each ▓ = 4.2% of the largest category',{bg:CLR.subBg,fg:'D0B898',bold:true,sz:10,al:'center',brdColor:CLR.subBg}),...Array(N-4).fill(BLANK(CLR.subBg))]);
-
-      CAT_META.forEach(m=>{
-        const n=catCounts[m.cat]||0;
-        const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink};
-        const pct=total>0?((n/total)*100).toFixed(1)+'%':'0%';
-        DR.push([
-          C(m.cat,{bg:cc.bg,fg:cc.fg,bold:true,sz:10,brdColor:cc.fg+'44'}),
-          NUM(n,cc.fg,cc.bg,11),
-          C(pct,{bg:cc.bg,fg:'888888',sz:9,al:'center',brdColor:cc.fg+'44'}),
-          BAR(n,maxCat,cc.fg,cc.bg),
-          ...Array(N-4).fill(C('',{bg:cc.bg,brdColor:cc.fg+'22'})),
-        ]);
+  try{
+    // Load ExcelJS from CDN if not already loaded
+    if(!window.ExcelJS){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
       });
-
-      DR.push(E(CLR.warm2));
-
-      /* ── MONTHLY GROWTH ── */
-      DR.push([SECHDR('  📈  MONTHLY GROWTH — LAST 12 MONTHS'),...Array(N-1).fill(BLANK(CLR.headerBg))]);
-      DR.push([HDRROW('Month'),HDRROW('Added'),HDRROW('Bar'),HDRROW(''),...Array(N-4).fill(HDRROW(''))]);
-
-      mKeys.forEach(k=>{
-        const v=monthly[k];
-        const isPeak=v===maxM;
-        const lbl=new Date(k.split('-')[0],k.split('-')[1]-1).toLocaleDateString('en-GB',{month:'short',year:'numeric'});
-        const fg=isPeak?CLR.rust:v>maxM*0.6?CLR.amber:CLR.slate;
-        const bg=isPeak?CLR.rustLt:CLR.cream;
-        DR.push([
-          C(lbl,{bg,fg:CLR.ink,bold:isPeak,sz:10}),
-          NUM(v,fg,bg,11),
-          BAR(v,maxM,fg,bg),
-          C(isPeak?'◀ PEAK MONTH':v>maxM*0.6?'High':'',{bg,fg,sz:8,al:'center',bold:isPeak}),
-          ...Array(N-4).fill(C('',{bg,brd:false})),
-        ]);
-      });
-
-      DR.push(E(CLR.warm2));
-
-      /* ── TOP COMPANIES ── */
-      DR.push([SECHDR('  🏢  TOP 10 COMPANIES IN NETWORK'),...Array(N-1).fill(BLANK(CLR.headerBg))]);
-      DR.push([HDRROW('Company'),HDRROW('Count'),HDRROW('%'),HDRROW('Distribution'),...Array(N-4).fill(HDRROW(''))]);
-
-      const coFGs=[CLR.rust,'A84320',CLR.amber,'C4960E',CLR.forest,'3A7A52',CLR.navy,'2C5A8E',CLR.plum,'3A6E5A'];
-      topCos.forEach(([nm,v],i)=>{
-        const fg=coFGs[i%coFGs.length];
-        const pct=total>0?((v/total)*100).toFixed(1)+'%':'';
-        const rowBg=i%2===0?CLR.cream:CLR.warm;
-        DR.push([
-          C(nm,{bg:rowBg,fg:CLR.ink,bold:i<3,sz:10}),
-          NUM(v,fg,rowBg,11),
-          C(pct,{bg:rowBg,fg:'888888',sz:9,al:'center'}),
-          BAR(v,maxCo,fg,rowBg),
-          ...Array(N-4).fill(C('',{bg:rowBg,brd:false})),
-        ]);
-      });
-
-      DR.push(E(CLR.warm2));
-
-      /* ── HIGH-VALUE SEGMENTS ── */
-      DR.push([SECHDR('  🎯  HIGH-VALUE CAREER SEGMENTS'),...Array(N-1).fill(BLANK(CLR.headerBg))]);
-      DR.push([HDRROW('Segment'),HDRROW('Count'),HDRROW('% Network'),HDRROW('Career Leverage'),HDRROW('Recommended Action'),...Array(N-5).fill(HDRROW(''))]);
-
-      [
-        {cat:'Founder / C-Suite',  n:founders, lev:'★★★★★  Highest',  act:'Cold DM — lead with your best work'},
-        {cat:'YC Network',         n:yc,       lev:'★★★★★  Highest',  act:'DM immediately — apply directly via YC'},
-        {cat:'FAANG / Big Tech',   n:faang,    lev:'★★★★☆  Very High',act:'Request referrals before applying'},
-        {cat:'AI Companies',       n:ai,       lev:'★★★★☆  Very High',act:'Early-stage equity opportunities'},
-        {cat:'Engineering Manager',n:engMgr,   lev:'★★★☆☆  High',    act:'Reach out — direct hiring authority'},
-        {cat:'Recruiter / HR',     n:recruiters,lev:'★★★☆☆  High',   act:'Send tailored CV + brief LinkedIn note'},
-      ].forEach(seg=>{
-        const cc=CLR.cats[seg.cat]||{bg:CLR.cream,fg:CLR.ink};
-        const pct=total>0?((seg.n/total)*100).toFixed(1)+'%':'0%';
-        DR.push([
-          C(seg.cat,{bg:cc.bg,fg:cc.fg,bold:true,sz:10,brdColor:cc.fg+'44'}),
-          NUM(seg.n,cc.fg,cc.bg,11),
-          C(pct,{bg:cc.bg,fg:'888888',sz:9,al:'center',brdColor:cc.fg+'44'}),
-          C(seg.lev,{bg:cc.bg,fg:cc.fg,bold:true,sz:9,brdColor:cc.fg+'44'}),
-          C(seg.act,{bg:cc.bg,fg:'555555',sz:9,brdColor:cc.fg+'44'}),
-          ...Array(N-5).fill(C('',{bg:cc.bg,brdColor:cc.fg+'22'})),
-        ]);
-      });
-
-      /* ── Build dashboard worksheet ── */
-      const dashColW=[24,24,24,24,24,24,24,24];
-      const dashRowH=[];
-
-      // Row 0 title
-      dashRowH[0]={hpt:40};
-      // Row 1 subtitle
-      dashRowH[1]={hpt:20};
-      // Row 2 spacer
-      dashRowH[2]={hpt:6};
-      // Row 3 instruction
-      dashRowH[3]={hpt:24};
-      // Row 4 spacer
-      dashRowH[4]={hpt:6};
-      // Tile rows
-      const tileGroupCount=Math.ceil(CAT_META.length/4);
-      for(let g=0;g<tileGroupCount;g++){
-        const base=5+g*4;
-        dashRowH[base]={hpt:52};   // count
-        dashRowH[base+1]={hpt:22}; // name
-        dashRowH[base+2]={hpt:16}; // sub
-        dashRowH[base+3]={hpt:6};  // gap
-      }
-
-      const wsDash=buildSheet(DR,dashColW,dashRowH);
-
-      // Merges
-      const merges=[
-        {s:{r:0,c:0},e:{r:0,c:N-1}},  // title
-        {s:{r:1,c:0},e:{r:1,c:N-1}},  // subtitle
-        {s:{r:2,c:0},e:{r:2,c:N-1}},  // spacer
-        {s:{r:3,c:0},e:{r:3,c:N-1}},  // instruction
-        {s:{r:4,c:0},e:{r:4,c:N-1}},  // spacer
-      ];
-
-      // Find and merge section headers (they span full 8 cols)
-      // Walk DR and merge any row that is a single-cell-then-blanks header pattern
-      DR.forEach((row,ri)=>{
-        if(ri<=4)return;
-        const first=row[0];
-        if(first&&first.s&&first.s.font&&first.s.font.bold&&first.s.fill&&
-           (first.s.fill.fgColor.rgb===CLR.headerBg||first.s.fill.fgColor.rgb==='3D2A1A')&&
-           first.s.alignment.horizontal==='left'){
-          merges.push({s:{r:ri,c:0},e:{r:ri,c:N-1}});
-        }
-        // Also merge KPI-style header row
-        if(first&&first.s&&first.s.fill&&first.s.fill.fgColor.rgb===CLR.headerBg&&
-           first.s.font&&first.s.font.sz===11){
-          merges.push({s:{r:ri,c:0},e:{r:ri,c:N-1}});
-        }
-      });
-
-      wsDash['!merges']=merges;
-      XLSX.utils.book_append_sheet(wb,wsDash,'📊 Dashboard');
-
-      /* ═══════════════════════════════════════════
-         CATEGORY SHEETS
-      ═══════════════════════════════════════════ */
-      CAT_META.forEach(m=>{
-        const rows=(G.cats[m.cat]||[]).slice();
-        if(!rows.length)return;
-        const cc=CLR.cats[m.cat]||{bg:CLR.cream,fg:CLR.ink,accent:CLR.ink};
-
-        const aoa=[];
-
-        // Title row
-        aoa.push([
-          C(m.cat.toUpperCase(),{bg:CLR.headerBg,fg:CLR.offwhite,bold:true,sz:14,al:'left',brd:false}),
-          C(`${rows.length.toLocaleString()} connections`,{bg:CLR.headerBg,fg:'C8B8A8',sz:10,al:'right',it:true,brd:false}),
-          ...Array(5).fill(BLANK(CLR.headerBg))
-        ]);
-
-        // Coloured accent strip + back link
-        const backCell=C('← Click here to return to the Dashboard sheet',{bg:cc.bg,fg:cc.fg,sz:9,it:true,brd:false,underline:true});
-        backCell.l={Target:"#'📊 Dashboard'!A1",Tooltip:'Back to Dashboard'};
-        aoa.push([backCell,...Array(6).fill(BLANK(cc.bg))]);
-
-        // Stats strip
-        const n=rows.length;
-        const pct=total>0?((n/total)*100).toFixed(1):0;
-        aoa.push([
-          C(`${pct}% of your total network  ·  ${rows.filter(r=>r.isYC).length} YC  ·  ${rows.filter(r=>r.isFAANG).length} FAANG  ·  ${rows.filter(r=>r.isAI).length} AI companies`,
-            {bg:cc.bg,fg:cc.fg,sz:9,al:'left',it:true,brd:false}),
-          ...Array(6).fill(BLANK(cc.bg))
-        ]);
-
-        // Spacer
-        aoa.push(Array(7).fill(BLANK(CLR.warm2)));
-
-        // Column headers
-        aoa.push(['#','First Name','Last Name','Company','Position / Title','Connected On','Tags'].map((h,i)=>
-          C(h,{bg:CLR.headerBg,fg:CLR.white,bold:true,sz:10,al:i===0?'center':'left',brdColor:CLR.headerBg+'44'})
-        ));
-
-        // Data rows
-        rows.forEach((r,i)=>{
-          const rb=i%2===0?CLR.cream:CLR.warm;
-          const tags=[r.isYC?'YC':'',r.isFAANG?'FAANG':'',r.isAI?'AI':''].filter(Boolean).join(' · ');
-          const tagFg=r.isYC?CLR.amber:r.isFAANG?CLR.navy:r.isAI?CLR.forest:CLR.muted;
-          const tagBg=r.isYC?CLR.amberLt:r.isFAANG?CLR.navyLt:r.isAI?CLR.forestLt:rb;
-          aoa.push([
-            NUM(i+1,'AAAAAA',rb,9),
-            C(r.fn,{bg:rb,fg:CLR.ink,sz:10}),
-            C(r.ln,{bg:rb,fg:CLR.ink,sz:10}),
-            C(r.co,{bg:rb,fg:cc.accent,bold:i<5,sz:10}),
-            C(r.pos,{bg:rb,fg:'666666',sz:9}),
-            C(r.con||'—',{bg:rb,fg:CLR.muted,sz:9,al:'center'}),
-            tags?C(tags,{bg:tagBg,fg:tagFg,bold:true,sz:9,al:'center',brdColor:tagFg+'44'}):BLANK(rb),
-          ]);
-        });
-
-        const ws=buildSheet(aoa,
-          [5,14,15,28,34,14,16],
-          [{hpt:34},{hpt:16},{hpt:16},{hpt:6},{hpt:22},...rows.map(()=>({hpt:20}))]
-        );
-        ws['!merges']=[
-          {s:{r:0,c:0},e:{r:0,c:6}},
-          {s:{r:1,c:0},e:{r:1,c:6}},
-          {s:{r:2,c:0},e:{r:2,c:6}},
-          {s:{r:3,c:0},e:{r:3,c:6}},
-        ];
-        XLSX.utils.book_append_sheet(wb,ws,m.sn);
-      });
-
-      /* ── Write file ── */
-      XLSX.writeFile(wb,'NetLens_Analytics.xlsx',{cellStyles:true,bookSST:false});
-      btn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor" style="width:15px;height:15px"><path d="M8 11.5l-3.5-3.5H7V3h2v5h2.5L8 11.5z"/><rect x="2" y="13" width="12" height="1.5" rx=".6"/></svg> Download Excel Analytics';
-      btn.disabled=false;
-    }catch(e){
-      console.error('Excel error:',e);
-      btn.textContent='⚠ Error — try again';
-      btn.disabled=false;
     }
-  },200);
+
+    const wb=new ExcelJS.Workbook();
+    wb.creator='NetLens'; wb.created=new Date();
+    const d=G.all, total=d.length;
+
+    /* ── Colour palette ── */
+    const C={
+      headerDark:'2D1B0E', subDark:'3D2A1A',
+      cream:'FAF7F2', warm:'F2EDE4', warm2:'E8E0D4',
+      white:'FFFFFF', offWhite:'FFF8F0',
+      muted:'B0A090', border:'D9D0C4',
+      rust:'C4522A', rustLt:'FAEEE8', rustPale:'FDF6F3',
+      amber:'C4860A', amberLt:'FBF0D8',
+      forest:'2D5A3D', forestLt:'E4F0E8',
+      navy:'1C3A5E', navyLt:'E6EEF7',
+      plum:'5C2D6E', plumLt:'F2EAF7',
+      teal:'2A5A4E', tealLt:'E0F4EE',
+      slate:'4A3A2A', slateLt:'F5F0EB',
+      cats:{
+        'Founder / C-Suite':    {fg:'C4522A',bg:'FAEEE8',blt:'FDF6F3',sn:'Founder-C-Suite'},
+        'SWE / Engineer':       {fg:'1C3A5E',bg:'E6EEF7',blt:'F0F4FB',sn:'SWE-Engineer'},
+        'Senior / Staff SWE':   {fg:'2D5A3D',bg:'E4F0E8',blt:'EEF7F1',sn:'Senior-Staff-SWE'},
+        'Engineering Manager':  {fg:'1F4A2E',bg:'E8F4EC',blt:'F2FAF4',sn:'Eng-Manager'},
+        'Recruiter / HR':       {fg:'5C2D6E',bg:'F2EAF7',blt:'F8F3FB',sn:'Recruiter-HR'},
+        'Product Manager':      {fg:'8B3A1A',bg:'FFF0EC',blt:'FFF8F5',sn:'Product-Manager'},
+        'Data Science / ML':    {fg:'2A5A4E',bg:'E0F4EE',blt:'EDF9F4',sn:'Data-Science-ML'},
+        'Director / VP':        {fg:'4A3A2A',bg:'F5F0EB',blt:'FAF7F4',sn:'Director-VP'},
+        'Investor / VC':        {fg:'C4860A',bg:'FBF0D8',blt:'FDF7EC',sn:'Investor-VC'},
+        'Student / Intern':     {fg:'6A6050',bg:'F5F5F0',blt:'FAFAF8',sn:'Student-Intern'},
+        'Analyst / Consultant': {fg:'5A5040',bg:'F5F2EE',blt:'FAF8F6',sn:'Analyst-Consult'},
+        'FAANG / Big Tech':     {fg:'1A3A6E',bg:'E5EDFA',blt:'EFF4FD',sn:'FAANG-Big-Tech'},
+        'YC Network':           {fg:'A84320',bg:'FDECEA',blt:'FEF5F4',sn:'YC-Network'},
+        'AI Companies':         {fg:'2D6A4A',bg:'E0F4EE',blt:'EDF9F4',sn:'AI-Companies'},
+        'Other':                {fg:'8A8070',bg:'F5F5F0',blt:'FAFAF8',sn:'Other'},
+      }
+    };
+
+    const CAT_ORDER=[
+      'Founder / C-Suite','SWE / Engineer','Senior / Staff SWE','Engineering Manager',
+      'Recruiter / HR','Product Manager','Data Science / ML','Director / VP',
+      'Investor / VC','Student / Intern','Analyst / Consultant',
+      'FAANG / Big Tech','YC Network','AI Companies','Other'
+    ];
+
+    const catCounts={};
+    CAT_ORDER.forEach(cat=>catCounts[cat]=(G.cats[cat]||[]).length);
+
+    const monthly={};
+    d.forEach(r=>{if(!r.con)return;const dt=new Date(r.con);if(isNaN(dt))return;
+      const k=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+      monthly[k]=(monthly[k]||0)+1});
+    const mKeys=Object.keys(monthly).sort().slice(-12);
+    const maxM=Math.max(...mKeys.map(k=>monthly[k]),1);
+
+    const coCnt={};d.forEach(r=>{if(r.co)coCnt[r.co]=(coCnt[r.co]||0)+1});
+    const topCos=Object.entries(coCnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const maxCo=topCos[0]?.[1]||1;
+    const maxCat=Math.max(...CAT_ORDER.map(c=>catCounts[c]||0),1);
+
+    const founders=catCounts['Founder / C-Suite']||0;
+    const faang=catCounts['FAANG / Big Tech']||0;
+    const yc=catCounts['YC Network']||0;
+    const ai=catCounts['AI Companies']||0;
+    const engMgr=catCounts['Engineering Manager']||0;
+    const recruiters=catCounts['Recruiter / HR']||0;
+
+    /* ── Style helpers ── */
+    const fgFill=(hex)=>({type:'pattern',pattern:'solid',fgColor:{argb:'FF'+hex}});
+    const font=(opts={})=>({
+      name:opts.name||'Calibri', size:opts.sz||10,
+      bold:opts.bold||false, italic:opts.it||false,
+      color:{argb:'FF'+(opts.color||'1A140E')},
+      underline:opts.ul||false,
+    });
+    const align=(h='left',v='middle',wrap=false)=>({horizontal:h,vertical:v,wrapText:wrap});
+    const border=(color='D9D0C4',style='thin')=>({
+      top:{style,color:{argb:'FF'+color}},
+      bottom:{style,color:{argb:'FF'+color}},
+      left:{style,color:{argb:'FF'+color}},
+      right:{style,color:{argb:'FF'+color}},
+    });
+
+    function styleCell(cell,opts={}){
+      const{bg='FAF7F2',fg='1A140E',bold=false,sz=10,h='left',it=false,
+        wrap=false,brd=true,bc='D9D0C4',bs='thin',ul=false,name='Calibri'}=opts;
+      cell.fill=fgFill(bg);
+      cell.font=font({sz,bold,it,color:fg,ul,name});
+      cell.alignment=align(h,'middle',wrap);
+      if(brd)cell.border=border(bc,bs);
+    }
+
+    function bar(n,max,len=20){
+      const f=max>0?Math.round((n/max)*len):0;
+      return '▓'.repeat(f)+'░'.repeat(len-f);
+    }
+
+    /* ══════════════════════════════
+       DASHBOARD SHEET
+    ══════════════════════════════ */
+    const ws=wb.addWorksheet('📊 Dashboard',{views:[{showGridLines:false}]});
+
+    // Column widths — 8 equal columns
+    ws.columns=Array(8).fill(null).map(()=>({width:22}));
+
+    let R=1;
+
+    function addFullRow(val,opts={}){
+      ws.mergeCells(R,1,R,8);
+      const cell=ws.getCell(R,1);
+      cell.value=val;
+      styleCell(cell,{...opts,brd:false});
+      ws.getRow(R).height=opts.height||22;
+      R++;
+    }
+
+    function spacer(bg='E8E0D4',height=8){
+      for(let c=1;c<=8;c++){
+        ws.getCell(R,c).fill=fgFill(bg);
+      }
+      ws.getRow(R).height=height;
+      R++;
+    }
+
+    // ── Title ──
+    addFullRow('NetLens  —  LinkedIn Network Analytics Dashboard',
+      {bg:C.headerDark,fg:C.offWhite,bold:true,sz:16,h:'center',height:44});
+
+    addFullRow(
+      `${total.toLocaleString()} connections  ·  ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}  ·  All data processed locally — never left your browser`,
+      {bg:C.subDark,fg:'C8B8A8',sz:9,it:true,h:'center',height:20});
+
+    spacer(C.warm2,6);
+
+    addFullRow('  🖱   CLICK ANY COLOURED TILE  →  JUMPS DIRECTLY TO THAT CATEGORY SHEET',
+      {bg:C.subDark,fg:'E8D0B8',bold:true,sz:10,h:'left',height:26});
+
+    spacer(C.warm2,8);
+
+    /* ── TILES: 4 per row ── */
+    const SUBS={
+      'Founder / C-Suite':'Highest leverage · DM first',
+      'SWE / Engineer':'Core peer engineer network',
+      'Senior / Staff SWE':'Senior engineers at top companies',
+      'Engineering Manager':'Direct hiring decision makers',
+      'Recruiter / HR':'Direct hiring pipeline',
+      'Product Manager':'PMs at target companies',
+      'Data Science / ML':'ML & AI researchers',
+      'Director / VP':'Senior leaders',
+      'Investor / VC':'Venture & angel investors',
+      'Student / Intern':'Peer student network',
+      'Analyst / Consultant':'Analyst & consulting roles',
+      'FAANG / Big Tech':'Referral goldmine  ★',
+      'YC Network':'YC direct connections  ★★',
+      'AI Companies':'AI startup contacts',
+      'Other':'Remaining connections',
+    };
+
+    for(let g=0;g<Math.ceil(CAT_ORDER.length/4);g++){
+      const slice=CAT_ORDER.slice(g*4,(g+1)*4);
+      const countR=R, nameR=R+1, subR=R+2, gapR=R+3;
+      ws.getRow(countR).height=54;
+      ws.getRow(nameR).height=24;
+      ws.getRow(subR).height=18;
+      ws.getRow(gapR).height=8;
+
+      slice.forEach((cat,ti)=>{
+        const col=ti+1;
+        const cc=C.cats[cat]||{fg:'8A8070',bg:'F5F5F0',blt:'FAFAF8',sn:'Other'};
+        const n=catCounts[cat]||0;
+
+        // Count cell — big number + hyperlink
+        const countCell=ws.getCell(countR,col);
+        countCell.value=n;
+        styleCell(countCell,{bg:cc.bg,fg:cc.fg,bold:true,sz:32,h:'center',bc:cc.fg+'44'});
+        countCell.value={
+          formula:`HYPERLINK("#'${cc.sn}'!A1","${n}")`,
+          result:n
+        };
+        // Workaround: use direct hyperlink
+        countCell.value=n;
+        countCell.fill=fgFill(cc.bg);
+        countCell.font=font({sz:32,bold:true,color:cc.fg});
+        countCell.alignment=align('center','middle');
+        countCell.border=border(cc.fg+'44');
+
+        // Name cell — hyperlink to sheet
+        const nameCell=ws.getCell(nameR,col);
+        nameCell.value={text:cat,hyperlink:`#'${cc.sn}'!A1`};
+        styleCell(nameCell,{bg:cc.bg,fg:cc.fg,bold:true,sz:11,h:'center',bc:cc.fg+'44'});
+        nameCell.font=font({sz:11,bold:true,color:cc.fg,ul:'single'});
+
+        // Sub label
+        const subCell=ws.getCell(subR,col);
+        subCell.value=SUBS[cat]||'';
+        styleCell(subCell,{bg:cc.blt,fg:cc.fg,sz:8,h:'center',it:true,bc:cc.fg+'22'});
+
+        // Gap
+        ws.getCell(gapR,col).fill=fgFill(C.warm2);
+      });
+
+      // Fill empty cols
+      for(let ti=slice.length;ti<4;ti++){
+        const col=ti+1;
+        [countR,nameR,subR,gapR].forEach(r=>ws.getCell(r,col).fill=fgFill(C.warm));
+      }
+      R+=4;
+    }
+
+    spacer(C.warm2,8);
+
+    /* ── KPI ROW ── */
+    addFullRow('  NETWORK AT A GLANCE',
+      {bg:C.headerDark,fg:C.white,bold:true,sz:11,h:'left',height:26});
+
+    const KPI=[
+      {l:'Total',        v:total,    fg:C.rust,  bg:C.rustLt},
+      {l:'Founders',     v:founders, fg:C.rust,  bg:C.rustPale},
+      {l:'FAANG',        v:faang,    fg:C.navy,  bg:C.navyLt},
+      {l:'YC Founders',  v:yc,       fg:'A84320',bg:'FDECEA'},
+      {l:'AI Companies', v:ai,       fg:C.forest,bg:C.forestLt},
+      {l:'Eng Managers', v:engMgr,   fg:C.teal,  bg:C.tealLt},
+      {l:'Recruiters',   v:recruiters,fg:C.plum, bg:C.plumLt},
+      {l:'Other',        v:catCounts['Other']||0,fg:C.slate,bg:C.slateLt},
+    ];
+
+    ws.getRow(R).height=18;
+    KPI.forEach((k,i)=>{
+      const c=ws.getCell(R,i+1); c.value=k.l;
+      styleCell(c,{bg:k.bg,fg:k.fg,bold:true,sz:9,h:'center',bc:k.fg+'44'});
+    }); R++;
+
+    ws.getRow(R).height=44;
+    KPI.forEach((k,i)=>{
+      const c=ws.getCell(R,i+1); c.value=k.v;
+      styleCell(c,{bg:k.bg,fg:k.fg,bold:true,sz:28,h:'center',bc:k.fg+'44'});
+    }); R++;
+
+    ws.getRow(R).height=16;
+    KPI.forEach((k,i)=>{
+      const c=ws.getCell(R,i+1);
+      c.value=total>0?`${(k.v/total*100).toFixed(1)}%`:'—';
+      styleCell(c,{bg:k.bg,fg:'888888',sz:8,h:'center',it:true,bc:k.fg+'22'});
+    }); R++;
+
+    spacer(C.warm2,10);
+
+    /* ── CATEGORY DISTRIBUTION ── */
+    addFullRow('  📊   CATEGORY DISTRIBUTION',
+      {bg:C.headerDark,fg:C.white,bold:true,sz:11,h:'left',height:26});
+
+    const distHdrs=['Category','Count','% Share','Bar Chart','','','',''];
+    ws.getRow(R).height=22;
+    distHdrs.forEach((h,i)=>{
+      const c=ws.getCell(R,i+1); c.value=h;
+      styleCell(c,{bg:C.subDark,fg:'D0B898',bold:true,sz:10,h:i===0?'left':'center'});
+    }); R++;
+
+    CAT_ORDER.forEach(cat=>{
+      const cc=C.cats[cat]||{fg:'8A8070',bg:'F5F5F0',blt:'FAFAF8'};
+      const n=catCounts[cat]||0;
+      const pct=total>0?`${(n/total*100).toFixed(1)}%`:'0%';
+      const b=bar(n,maxCat);
+      ws.getRow(R).height=22;
+
+      const c1=ws.getCell(R,1); c1.value=cat;
+      styleCell(c1,{bg:cc.bg,fg:cc.fg,bold:true,sz:10,bc:cc.fg+'44'});
+
+      const c2=ws.getCell(R,2); c2.value=n;
+      styleCell(c2,{bg:cc.bg,fg:cc.fg,bold:true,sz:11,h:'center',bc:cc.fg+'44'});
+
+      const c3=ws.getCell(R,3); c3.value=pct;
+      styleCell(c3,{bg:cc.bg,fg:'888888',sz:9,h:'center',bc:cc.fg+'22'});
+
+      const c4=ws.getCell(R,4); c4.value=`${b}  ${n.toLocaleString()}`;
+      c4.fill=fgFill(cc.bg);
+      c4.font=font({name:'Courier New',sz:9,color:cc.fg,bold:n===maxCat});
+      c4.alignment=align('left','middle');
+      c4.border=border(cc.fg+'33');
+
+      for(let i=5;i<=8;i++){
+        ws.getCell(R,i).fill=fgFill(cc.blt);
+        ws.getCell(R,i).border=border(cc.fg+'11');
+      }
+      R++;
+    });
+
+    spacer(C.warm2,10);
+
+    /* ── MONTHLY GROWTH ── */
+    addFullRow('  📈   MONTHLY GROWTH — LAST 12 MONTHS',
+      {bg:C.headerDark,fg:C.white,bold:true,sz:11,h:'left',height:26});
+
+    ws.getRow(R).height=22;
+    ['Month','Added','Bar','Note','','','',''].forEach((h,i)=>{
+      const c=ws.getCell(R,i+1); c.value=h;
+      styleCell(c,{bg:C.subDark,fg:'D0B898',bold:true,sz:10,h:i===0?'left':'center'});
+    }); R++;
+
+    const coColors=['C4522A','A84320','C4860A','C4960E','2D5A3D','3A7A52','1C3A5E','2C5A8E','5C2D6E','3A6E5A'];
+
+    mKeys.forEach(k=>{
+      const v=monthly[k], isPeak=v===maxM;
+      const lbl=new Date(k.split('-')[0],parseInt(k.split('-')[1])-1)
+        .toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+      const fg=isPeak?C.rust:(v>maxM*0.6?C.amber:C.slate);
+      const bg=isPeak?C.rustLt:C.cream;
+      const b=bar(v,maxM);
+      ws.getRow(R).height=20;
+
+      const c1=ws.getCell(R,1); c1.value=lbl;
+      styleCell(c1,{bg,fg:'1A140E',bold:isPeak,sz:10});
+      const c2=ws.getCell(R,2); c2.value=v;
+      styleCell(c2,{bg,fg,bold:isPeak,sz:11,h:'center'});
+      const c3=ws.getCell(R,3); c3.value=`${b}  ${v.toLocaleString()}`;
+      c3.fill=fgFill(bg); c3.font=font({name:'Courier New',sz:9,color:fg,bold:isPeak});
+      c3.alignment=align('left','middle'); c3.border=border();
+      const c4=ws.getCell(R,4); c4.value=isPeak?'◀ PEAK':(v>maxM*0.6?'High':'');
+      styleCell(c4,{bg,fg,bold:isPeak,sz:8,h:'center'});
+      for(let i=5;i<=8;i++) ws.getCell(R,i).fill=fgFill(bg);
+      R++;
+    });
+
+    spacer(C.warm2,10);
+
+    /* ── TOP COMPANIES ── */
+    addFullRow('  🏢   TOP 10 COMPANIES IN NETWORK',
+      {bg:C.headerDark,fg:C.white,bold:true,sz:11,h:'left',height:26});
+
+    ws.getRow(R).height=22;
+    ['Company','Count','% Share','Distribution','','','',''].forEach((h,i)=>{
+      const c=ws.getCell(R,i+1); c.value=h;
+      styleCell(c,{bg:C.subDark,fg:'D0B898',bold:true,sz:10,h:i===0?'left':'center'});
+    }); R++;
+
+    topCos.forEach(([nm,v],i)=>{
+      const fg=coColors[i%coColors.length];
+      const bg=i%2===0?C.cream:C.warm;
+      const pct=`${(v/total*100).toFixed(1)}%`;
+      const b=bar(v,maxCo);
+      ws.getRow(R).height=20;
+
+      const c1=ws.getCell(R,1); c1.value=nm;
+      styleCell(c1,{bg,fg:'1A140E',bold:i<3,sz:10});
+      const c2=ws.getCell(R,2); c2.value=v;
+      styleCell(c2,{bg,fg,bold:true,sz:11,h:'center'});
+      const c3=ws.getCell(R,3); c3.value=pct;
+      styleCell(c3,{bg,fg:'888888',sz:9,h:'center'});
+      const c4=ws.getCell(R,4); c4.value=`${b}  ${v.toLocaleString()}`;
+      c4.fill=fgFill(bg); c4.font=font({name:'Courier New',sz:9,color:fg,bold:i<3});
+      c4.alignment=align('left','middle'); c4.border=border();
+      for(let i2=5;i2<=8;i2++) ws.getCell(R,i2).fill=fgFill(bg);
+      R++;
+    });
+
+    spacer(C.warm2,10);
+
+    /* ── HIGH-VALUE SEGMENTS ── */
+    addFullRow('  🎯   HIGH-VALUE CAREER SEGMENTS',
+      {bg:C.headerDark,fg:C.white,bold:true,sz:11,h:'left',height:26});
+
+    ws.getRow(R).height=22;
+    ['Segment','Count','% Network','Leverage','Recommended Action','','',''].forEach((h,i)=>{
+      const c=ws.getCell(R,i+1); c.value=h;
+      styleCell(c,{bg:C.subDark,fg:'D0B898',bold:true,sz:10,h:i===0?'left':'center'});
+    }); R++;
+
+    [
+      {cat:'Founder / C-Suite',  lev:'★★★★★  Highest',   act:'Cold DM — lead with your best work'},
+      {cat:'YC Network',         lev:'★★★★★  Highest',   act:'DM immediately — apply via YC jobs'},
+      {cat:'FAANG / Big Tech',   lev:'★★★★☆  Very High', act:'Request a referral before applying'},
+      {cat:'AI Companies',       lev:'★★★★☆  Very High', act:'Early-stage equity opportunities'},
+      {cat:'Engineering Manager',lev:'★★★☆☆  High',      act:'Direct hiring authority — reach out'},
+      {cat:'Recruiter / HR',     lev:'★★★☆☆  High',      act:'Send tailored CV + LinkedIn note'},
+    ].forEach(seg=>{
+      const cc=C.cats[seg.cat]||{fg:'8A8070',bg:'F5F5F0'};
+      const n=catCounts[seg.cat]||0;
+      const pct=`${(n/total*100).toFixed(1)}%`;
+      ws.getRow(R).height=22;
+
+      [[seg.cat,'left',true,10],[n,'center',true,11],[pct,'center',false,9],
+       [seg.lev,'left',true,9],[seg.act,'left',false,9]].forEach(([val,h,bold,sz],i)=>{
+        const c=ws.getCell(R,i+1); c.value=val;
+        styleCell(c,{bg:cc.bg,fg:i===4?'333333':cc.fg,bold,sz,h,bc:cc.fg+'44'});
+      });
+      for(let i=6;i<=8;i++) ws.getCell(R,i).fill=fgFill(cc.bg);
+      R++;
+    });
+
+    /* ══════════════════════════════
+       CATEGORY SHEETS
+    ══════════════════════════════ */
+    CAT_ORDER.forEach(cat=>{
+      const rows=G.cats[cat]||[];
+      if(!rows.length)return;
+      const cc=C.cats[cat]||{fg:'8A8070',bg:'F5F5F0',blt:'FAFAF8',sn:'Other'};
+
+      const cws=wb.addWorksheet(cc.sn,{views:[{showGridLines:false,state:'frozen',ySplit:5}]});
+      cws.columns=[
+        {width:5},{width:14},{width:15},{width:30},{width:36},{width:14},{width:18}
+      ];
+
+      // Row 1: title
+      cws.mergeCells(1,1,1,7);
+      const t=cws.getCell(1,1); t.value=cat.toUpperCase();
+      styleCell(t,{bg:C.headerDark,fg:C.offWhite,bold:true,sz:14,brd:false});
+      cws.getRow(1).height=36;
+
+      // Row 2: back link
+      cws.mergeCells(2,1,2,7);
+      const bl=cws.getCell(2,1);
+      bl.value={text:'← Click here to return to the Dashboard',hyperlink:`#'📊 Dashboard'!A1`};
+      styleCell(bl,{bg:cc.bg,fg:cc.fg,sz:9,it:true,brd:false,ul:true});
+      cws.getRow(2).height=18;
+
+      // Row 3: stats strip
+      cws.mergeCells(3,1,3,7);
+      const n=rows.length;
+      const pct=total>0?`${(n/total*100).toFixed(1)}`:0;
+      const ycN=rows.filter(r=>r.isYC).length;
+      const fnN=rows.filter(r=>r.isFAANG).length;
+      const aiN=rows.filter(r=>r.isAI).length;
+      const st=cws.getCell(3,1);
+      st.value=`  ${pct}% of your total network  ·  ${ycN} YC  ·  ${fnN} FAANG  ·  ${aiN} AI companies`;
+      styleCell(st,{bg:cc.blt,fg:cc.fg,sz:9,it:true,brd:false});
+      cws.getRow(3).height=16;
+
+      // Row 4: spacer
+      for(let i=1;i<=7;i++) cws.getCell(4,i).fill=fgFill(C.warm2);
+      cws.getRow(4).height=6;
+
+      // Row 5: column headers
+      ['#','First Name','Last Name','Company','Position / Title','Connected On','Tags'].forEach((h,i)=>{
+        const c=cws.getCell(5,i+1); c.value=h;
+        styleCell(c,{bg:C.headerDark,fg:C.white,bold:true,sz:10,h:'center'});
+      });
+      cws.getRow(5).height=22;
+
+      // Data rows
+      rows.forEach((r,idx)=>{
+        const row=idx+6;
+        cws.getRow(row).height=20;
+        const rb=idx%2===0?C.cream:C.warm;
+        const tags=[r.isYC?'YC':'',r.isFAANG?'FAANG':'',r.isAI?'AI':''].filter(Boolean).join(' · ');
+        const tFg=r.isYC?C.amber:r.isFAANG?C.navy:r.isAI?C.forest:'888888';
+        const tBg=r.isYC?C.amberLt:r.isFAANG?C.navyLt:r.isAI?C.forestLt:rb;
+
+        const vals=[idx+1,r.fn,r.ln,r.co,r.pos,r.con||'—',tags];
+        vals.forEach((val,ci)=>{
+          const c=cws.getCell(row,ci+1); c.value=val;
+          if(ci===0) styleCell(c,{bg:rb,fg:C.muted,sz:9,h:'center'});
+          else if(ci===3) styleCell(c,{bg:rb,fg:cc.fg,bold:idx<5,sz:10});
+          else if(ci===4) styleCell(c,{bg:rb,fg:'555555',sz:9});
+          else if(ci===5) styleCell(c,{bg:rb,fg:C.muted,sz:9,h:'center'});
+          else if(ci===6&&tags) styleCell(c,{bg:tBg,fg:tFg,bold:true,sz:9,h:'center',bc:tFg+'44'});
+          else styleCell(c,{bg:rb,fg:'1A140E',sz:10});
+        });
+      });
+    });
+
+    /* ── Download ── */
+    btn.textContent='⏳ Saving file…';
+    const buffer=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='NetLens_Analytics.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+
+    btn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor" style="width:15px;height:15px"><path d="M8 11.5l-3.5-3.5H7V3h2v5h2.5L8 11.5z"/><rect x="2" y="13" width="12" height="1.5" rx=".6"/></svg> Download Excel Analytics';
+    btn.disabled=false;
+
+  }catch(e){
+    console.error('ExcelJS error:',e);
+    btn.textContent='⚠ Error — try again';
+    btn.disabled=false;
+  }
 }
 
 </script>
